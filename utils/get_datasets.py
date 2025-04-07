@@ -101,25 +101,21 @@ def process_data(source: DataSource, data_path, year_start=None, year_end=None):
     elif source in {DataSource.INMET, DataSource.INMET_DAILY}:
         print(f"Processando dados do {source}...")
 
-        def process_inmet_data(file_path):
-            """Processa os dados do INMET."""
-            df = pd.read_csv(file_path, sep=';')
+
+        df = pd.read_csv(data_path, sep=';')
+            
+        if source == DataSource.INMET:
             df.columns = ['Date', 'Hour', 'Precipitation', 'Null']
             df = df[['Date', 'Hour', 'Precipitation']]
-            df[['Year', 'Month', 'Day']] = df.Date.str.split("-", expand=True)
             df['Hour'] = df['Hour'].astype(float) / 100  # Converte hora para formato decimal
+            df[['Year', 'Month', 'Day']] = df.Date.str.split("-", expand=True) 
             return convert_to_numeric(df, ['Year', 'Month', 'Day', 'Hour'])
-
-        if source == DataSource.INMET:
-            # Processa os dados de estações automáticas e convencionais
-            aut_df = process_inmet_data(f'{data_path}/INMET_8H/data_aut_8h.csv')
-            conv_df = process_inmet_data(f'{data_path}/INMET_8H/data_conv_8h.csv')
-        else:  # INMET_DAILY
-            # Processa os dados diários de estações automáticas e convencionais
-            aut_df = process_inmet_data(f'{data_path}/INMET_DAILY/data_aut_daily.csv')
-            conv_df = process_inmet_data(f'{data_path}/INMET_DAILY/data_conv_daily.csv')
-
-        return aut_df, conv_df
+        
+        if source == DataSource.INMET_DAILY:
+            df.columns = ['Date', 'Precipitation', 'Null']
+            df = df[['Date', 'Precipitation']]
+            df[['Year', 'Month', 'Day']] = df.Date.str.split("-", expand=True) 
+            return convert_to_numeric(df, ['Year', 'Month', 'Day'])
 
     elif source == DataSource.MAPLU:
         print("Processando dados do DataSource.MAPLU...")

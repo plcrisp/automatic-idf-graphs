@@ -18,6 +18,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
 
 # Função para agregação flexível
 def aggregate(df, vars):
@@ -66,21 +67,26 @@ def aggregate_to_csv(df, name, directory='Results'):
     name (str): Nome base para os arquivos.
     directory (str): Caminho do diretório onde salvar os resultados.
     """
-    # Agrega por ano, mês, dia, hora
+    
+    # Garante que o diretório existe
+    Path(directory).mkdir(parents=True,exist_ok=True)
+    
+    # Agrega por ano
     df_yearly = aggregate(df, ['Year'])
     save_to_csv(df_yearly, name, 'yearly', directory)
 
+    # Agrega por mês
     df_monthly = aggregate(df, ['Year', 'Month'])
     save_to_csv(df_monthly, name, 'monthly', directory)
 
+    # Agrega por dia
     df_daily = aggregate(df, ['Year', 'Month', 'Day'])
     save_to_csv(df_daily, name, 'daily', directory)
     
-    df_hourly = aggregate(df, ['Year', 'Month', 'Day', 'Hour'])
-    save_to_csv(df_hourly, name, 'hourly', directory)
-
-    # Salva o DataFrame original completo (não agregado)
-    save_to_csv(df, name, 'min', directory)
+    # Agrega por hora, caso a coluna exista
+    if 'Hour' in df.columns:
+        df_hourly = aggregate(df, ['Year', 'Month', 'Day', 'Hour'])
+        save_to_csv(df_hourly, name, 'hourly', directory)
 
 
 
