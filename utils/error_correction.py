@@ -7,7 +7,7 @@ Utiliza a biblioteca Pandas para manipulação de dados e uma biblioteca auxilia
 
 import pandas as pd
 from datetime import date
-from data_processing import *
+from .data_processing import read_csv
 
 def verification(df):
     """
@@ -16,35 +16,53 @@ def verification(df):
     Parâmetros:
         df (DataFrame): Um DataFrame contendo colunas 'Year', 'Month', 'Day'.
 
-    A função calcula o número total de dias entre a primeira e a última data
-    e compara esse valor com o número de entradas no DataFrame. Se houver dias
-    faltando, uma mensagem de erro é exibida. Caso contrário, confirma que a
-    série está completa.
+    A função compara o número de dias consecutivos entre a primeira e última data
+    com o número de registros na base. Informa se há lacunas ou se a série está completa.
+    
+    Retorna:
+        dict: Um dicionário com o status da verificação e o número de dias faltantes (se houver).
     """
+
+    result = {"status": "", "missing_days": 0}
+
     if df.empty:
-        print("Fail - DataFrame is empty.")
-        return
-    
-    # Verifica se as colunas 'Month' e 'Day' estão presentes
-    if 'Month' not in df.columns or 'Day' not in df.columns:
-        print("Fail - 'Month' and 'Day' columns are required for verification.")
-        return
+        print("[INFO] DataFrame está vazio.")
+        result["status"] = "empty"
+        return result
 
-    # Acessa os valores de data usando iloc
-    year_0, month_0, day_0 = df['Year'].iloc[0], df['Month'].iloc[0], df['Day'].iloc[0]
-    year_i, month_i, day_i = df['Year'].iloc[-1], df['Month'].iloc[-1], df['Day'].iloc[-1]
+    required_columns = {'Year', 'Month', 'Day'}
+    if not required_columns.issubset(df.columns):
+        print(f"[INFO] Colunas obrigatórias ausentes: {required_columns - set(df.columns)}")
+        result["status"] = "missing_columns"
+        return result
 
-    d0, di = date(year_0, month_0, day_0), date(year_i, month_i, day_i)
-    ndays_verification = (di - d0).days
-    ndays_real = len(df)
-    
-    verif_number = ndays_verification - ndays_real
-    if verif_number > 0:
-        print(f'Fail - series incomplete / number of days missing = {verif_number}')
-    elif verif_number == 0:
-        print('Series complete!')
+    # Cria coluna de data e ordena o DataFrame
+    df['Date'] = pd.to_datetime(df[['Year', 'Month', 'Day']])
+    df = df.sort_values('Date').reset_index(drop=True)
+
+    d0 = df['Date'].iloc[0].date()
+    di = df['Date'].iloc[-1].date()
+    expected_days = (di - d0).days + 1
+    actual_days = len(df)
+
+    print(f"[INFO] Período da série: {d0} até {di}")
+    print(f"[INFO] Dias esperados: {expected_days}")
+    print(f"[INFO] Entradas no DataFrame: {actual_days}")
+
+    missing_days = expected_days - actual_days
+
+    if missing_days > 0:
+        print(f"[WARNING] Série incompleta. Dias faltando: {missing_days}")
+        result["status"] = "incomplete"
+        result["missing_days"] = missing_days
+    elif missing_days == 0:
+        print("[OK] Série completa! Nenhum dia faltando.")
+        result["status"] = "complete"
     else:
-        print('Fail - invalid dataset')
+        print("[ERRO] Número de entradas excede o esperado. Verifique duplicatas ou erros.")
+        result["status"] = "invalid_dataset"
+
+    return result
         
         
         
