@@ -26,13 +26,13 @@ def verification(df):
     result = {"status": "", "missing_days": 0}
 
     if df.empty:
-        print("[INFO] DataFrame está vazio.")
+        print("\n[INFO] DataFrame está vazio.\n")
         result["status"] = "empty"
         return result
 
     required_columns = {'Year', 'Month', 'Day'}
     if not required_columns.issubset(df.columns):
-        print(f"[INFO] Colunas obrigatórias ausentes: {required_columns - set(df.columns)}")
+        print(f"\n[INFO] Colunas obrigatórias ausentes: {required_columns - set(df.columns)}\n")
         result["status"] = "missing_columns"
         return result
 
@@ -45,21 +45,21 @@ def verification(df):
     expected_days = (di - d0).days + 1
     actual_days = len(df)
 
-    print(f"[INFO] Período da série: {d0} até {di}")
+    print(f"\n[INFO] Período da série: {d0} até {di}")
     print(f"[INFO] Dias esperados: {expected_days}")
-    print(f"[INFO] Entradas no DataFrame: {actual_days}")
+    print(f"[INFO] Entradas no DataFrame: {actual_days}\n")
 
     missing_days = expected_days - actual_days
 
     if missing_days > 0:
-        print(f"[WARNING] Série incompleta. Dias faltando: {missing_days}")
+        print(f"[WARNING] Série incompleta. Dias faltando: {missing_days}\n")
         result["status"] = "incomplete"
         result["missing_days"] = missing_days
     elif missing_days == 0:
-        print("[OK] Série completa! Nenhum dia faltando.")
+        print("[OK] Série completa! Nenhum dia faltando.\n")
         result["status"] = "complete"
     else:
-        print("[ERRO] Número de entradas excede o esperado. Verifique duplicatas ou erros.")
+        print("[ERRO] Número de entradas excede o esperado. Verifique duplicatas ou erros.\n")
         result["status"] = "invalid_dataset"
 
     return result
@@ -99,7 +99,7 @@ def set_date(df):
 
 
 
-def fill_missing_data(name, var):
+def fill_missing_data(path):
     """
     Preenche os valores faltantes na coluna 'Precipitation' de um DataFrame
     utilizando interpolação sazonal (baseada em grupos mensais).
@@ -117,7 +117,7 @@ def fill_missing_data(name, var):
         DataFrame com os valores interpolados na coluna 'Precipitation'.
         Os índices do DataFrame permanecem alinhados com os valores originais.
     """
-    df = set_date(read_csv(name, var))
+    df = set_date(read_csv(path))
     
     # Realiza a interpolação sazonal (por mês)
     interpolated = (
