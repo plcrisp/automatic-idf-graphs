@@ -18,8 +18,8 @@ import pandas as pd
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
-from error_correction import remove_outliers_from_max
-from intervals_manipulation import aggregate_precipitation
+from .error_correction import remove_outliers_from_max
+from .intervals_manipulation import aggregate_precipitation
 
 
 """
@@ -29,20 +29,20 @@ from intervals_manipulation import aggregate_precipitation
 """
 
 
-def calculate_p90(data):
+def calculate_p90(df):
     """
     Calcula o percentil de 90% (P90) para valores de precipitação, ou seja, o valor que é excedido em apenas 10% das observações.
     Também plota o gráfico da probabilidade acumulada de não excedência em função da precipitação.
 
     Parâmetros:
-    data (pd.DataFrame): DataFrame com uma coluna 'Precipitation' contendo valores de precipitação.
+    df (pd.DataFrame): DataFrame com uma coluna 'Precipitation' contendo valores de precipitação.
 
     Retorna:
     float: O valor de precipitação correspondente ao percentil de 90% (P90).
     """
     
     # Filtra e ordena os valores de precipitação, excluindo zeros
-    df = data[['Precipitation']].query('Precipitation != 0').sort_values('Precipitation').reset_index(drop=True)
+    df = df[['Precipitation']].query('Precipitation != 0').sort_values('Precipitation').reset_index(drop=True)
 
     # Calcula a probabilidade de não excedência para cada valor em porcentagem
     df['Probability'] = (df.index + 1) / len(df) * 100
@@ -220,26 +220,39 @@ def get_max_subdaily_table(name_file, directory='Results', dt_min=False):
     
     
 
-def merge_max_tables(name_file, directory='Results'):
+def generate_complete_subdaily_table(name_file, directory='Results'):
     """
-    Mescla tabelas de máximos de precipitação acumulada em intervalos de minutos e horas 
-    e salva os resultados em um arquivo CSV.
+    Executa o pipeline completo para gerar e mesclar os máximos de precipitação acumulada 
+    em intervalos subdiários (minutos e horas), salvando o resultado final em um CSV.
 
     Parâmetros:
-    name_file (str): Nome do arquivo sem extensão que contém os dados.
-    directory (str): Diretório onde os arquivos estão localizados e onde o resultado será salvo.
-    
+    ----------
+    name_file : str
+        Nome base do arquivo (sem extensão).
+    directory : str
+        Diretório onde os arquivos de entrada estão e onde o resultado será salvo.
+
     Retorna:
-    None: Salva um arquivo CSV contendo os máximos acumulados por intervalo em minutos e horas.
+    -------
+    DataFrame:
+        DataFrame final com os máximos acumulados por intervalo em minutos e horas.
     """
-    # Lê os arquivos CSV que contêm os máximos acumulados
-    df_min = pd.read_csv(f'{directory}/max_subdaily_min_{name_file}.csv')
-    df_hour = pd.read_csv(f'{directory}/max_subdaily_{name_file}.csv')
     
-    # Mescla os DataFrames com base na coluna 'Year'
+    print('Iniciando geração da tabela completa de extremos subdiários...\n')
+
+    # Geração para dados em minutos
+    df_min = get_max_subdaily_table(name_file, directory=directory, dt_min=True)
+
+    # Geração para dados horários
+    df_hour = get_max_subdaily_table(name_file, directory=directory, dt_min=False)
+
+    # Mesclagem dos dois resultados
     df_complete = df_min.merge(df_hour, on='Year', how='inner')
-    
-    # Salva o DataFrame resultante em um novo arquivo CSV
-    df_complete.to_csv(f'{directory}/max_subdaily_complete_{name_file}.csv', index=False)
-    
-    print('Merge completo! Arquivo salvo em:', f'{directory}/max_subdaily_complete_{name_file}.csv')
+
+    # Salvando resultado final
+    output_path = f'{directory}/max_subdaily_complete_{name_file}.csv'
+    df_complete.to_csv(output_path, index=False)
+
+    print('\nPipeline finalizado com sucesso! Arquivo salvo em:', output_path)
+
+    return df_complete
