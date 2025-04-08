@@ -89,20 +89,12 @@ def get_common_distributions():
         list: Lista de distribuições contínuas.
     """
     return [
-        st.norm,          # Normal =
-        st.expon,         # Exponencial
-        st.gamma,         # Gama
-        st.beta,          # Beta
-        st.lognorm,       # Log-normal =
-        st.weibull_min,   # Weibull
-        st.uniform,       # Uniforme
-        st.chi2,          # Qui-quadrado
-        st.pareto,        # Pareto =
-        st.cauchy,        # Cauchy
-        st.laplace,       # Laplace
-        st.gumbel_r,      # Gumbel (direita) =
-        st.genextreme,    # Generalized Extreme Value (GEV) =
-        st.genlogistic,   # Generalized Logistic =
+        st.norm,          # Normal 
+        st.lognorm,       # Log-normal 
+        st.pareto,        # Pareto
+        st.gumbel_r,      # Gumbel (direita) 
+        st.genextreme,    # Generalized Extreme Value (GEV)
+        st.genlogistic,   # Generalized Logistic
     ]
     
 
