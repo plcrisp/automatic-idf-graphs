@@ -18,6 +18,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 from pathlib import Path
 
 # Função para agregação flexível
@@ -109,15 +110,16 @@ def read_csv(name, var, directory='Results'):
 
 
 
-# Função para observar a distribuição dos dados
-def distribution_plot_df(df):
+# Função para plotar a distribuição dos dados de precipitação
+def distribution_plot_df(df, show_max=False):
     """
     Gera um gráfico de densidade dos dados de precipitação 
-    a partir de um DataFrame.
+    a partir de um DataFrame, com a opção de exibir o maior valor no gráfico.
 
     Parâmetros:
     df (DataFrame): Um DataFrame contendo uma coluna 'Precipitation' 
                     com os dados de precipitação.
+    show_max (bool): Se True, exibe o maior valor de precipitação no gráfico.
 
     Retorna:
     None: Exibe o gráfico de densidade.
@@ -128,6 +130,15 @@ def distribution_plot_df(df):
     
     # Gera o gráfico de densidade
     sns.kdeplot(df['Precipitation'], color='skyblue', fill=True)
+    
+    # Se show_max for True, encontra e exibe o maior valor
+    if show_max:
+        max_value = df['Precipitation'].max()
+        plt.annotate(f'Máximo: {max_value} mm', 
+                     xy=(0.67, 0.9), 
+                     xycoords='axes fraction',
+                     fontsize=9, color='grey', weight='bold', 
+                     bbox=dict(facecolor='white', edgecolor='grey', boxstyle='round,pad=1'))
     
     # Configurações do gráfico
     plt.title('Distribuição de Precipitação')
