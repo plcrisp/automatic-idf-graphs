@@ -19,6 +19,15 @@ Este código é útil para análise hidrológica, auxiliando na preparação de 
 """
 
 import pandas as pd
+from enum import Enum
+
+
+class DisaggregationScenario(Enum):
+    BASE = 'base'
+    UMIDO = 'úmido'
+    SECO = 'seco'
+
+
 
 def aggregate_precipitation(df, interval, dt_min=False):
     """
@@ -91,51 +100,58 @@ def get_disagregation_factors(var_value, filename='parameters/fatores_desagregac
 
 
 
-def get_subdaily_from_disagregation_factors(df, type_of_disagregator, var_value, name_file, directory='Results'):
+
+def get_subdaily_from_disagregation_factors(df, scenario: DisaggregationScenario, var_value: float, name_file: str, directory='Results'):
     """
     Calcula os valores subdiários de precipitação baseados em fatores de desagregação.
 
     Parâmetros:
-    df (DataFrame): DataFrame contendo os dados de precipitação.
-    type_of_disagregator (str): Tipo de desagregador ('original', 'plus' ou 'minus').
-    var_value (float): Valor utilizado para os fatores de desagregação.
-    name_file (str): Nome do arquivo sem extensão onde os resultados serão salvos.
-    directory (str): Diretório onde o arquivo será salvo (padrão é 'Results').
-    
+    ----------
+    df : DataFrame
+        DataFrame contendo os dados de precipitação.
+    scenario : DisaggregationScenario
+        Enum definindo o tipo de cenário de desagregação:
+            - DisaggregationScenario.BASE
+            - DisaggregationScenario.UMIDO
+            - DisaggregationScenario.SECO
+    var_value : float
+        Valor usado para ajustar os cenários úmido e seco (ex.: 0.1, 0.2, 0.3).
+    name_file : str
+        Nome base do arquivo a ser salvo (sem extensão).
+    directory : str
+        Diretório onde os resultados serão salvos.
+
     Retorna:
-    None: Salva um arquivo CSV contendo os valores subdiários calculados.
+    -------
+    None: Salva um CSV com os valores subdiários calculados.
     """
-    
-    df_subdaily = df
+    df_subdaily = df.copy()
     df_disagreg_factors = get_disagregation_factors(var_value)
-    
-    # Define o tipo de desagregação
-    if type_of_disagregator == 'original':
-        type = 'ger'
-    elif type_of_disagregator == 'plus':
-        type = f'p{var_value}'
-    elif type_of_disagregator == 'minus':
-        type = f'm{var_value}'
-    
-    # Lista de intervalos que serão utilizados
+
+    if scenario == DisaggregationScenario.BASE:
+        type_tag = 'ger'
+    elif scenario == DisaggregationScenario.UMIDO:
+        type_tag = f'p{var_value}'
+    elif scenario == DisaggregationScenario.SECO:
+        type_tag = f'm{var_value}'
+    else:
+        raise ValueError("Cenário inválido.")
+
     intervals = [5, 10, 15, 20, 25, 30, 60, 360, 480, 600, 720, 1440]
-    
-    # Verifica se a coluna com o tipo existe em df_disagreg_factors
-    col_name = f'CETESB_{type}'
+    col_name = f'CETESB_{type_tag}'
+
     if col_name not in df_disagreg_factors.columns:
         raise ValueError(f"Coluna {col_name} não encontrada em df_disagreg_factors.")
-    
-    # Aplica os fatores de desagregação aos intervalos correspondentes
+
     for i, interval in enumerate(intervals):
         if i < len(df_disagreg_factors):
             factor = df_disagreg_factors[col_name].iloc[i]
-            column_name = f'Max_{interval}min' if interval < 60 else f'Max_{interval//60}h'
+            column_name = f'Max_{interval}min' if interval < 60 else f'Max_{interval // 60}h'
             df_subdaily[column_name] = df_subdaily['Precipitation'] * factor
         else:
             print(f"Intervalo {interval} não encontrado em fatores de desagregação.")
-    
-    # Salva o resultado no CSV
-    output_path = f'{directory}/max_subdaily_{name_file}_{type}.csv'
+
+    output_path = f'{directory}/max_subdaily_{name_file}_{type_tag}.csv'
     df_subdaily.to_csv(output_path, index=False)
     print(f'Resultado salvo em {output_path}')
 

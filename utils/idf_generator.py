@@ -58,8 +58,8 @@ import scipy.stats as st
 import matplotlib.pyplot as plt
 import os
 
-from error_correction import remove_outliers_from_max
-from get_distribution import fit_data, get_top_fitted_distributions
+from .error_correction import remove_outliers_from_max
+from .get_distribution import fit_data, get_top_fitted_distributions
 from scipy.optimize import minimize_scalar
 from sklearn.linear_model import LinearRegression
 
@@ -67,7 +67,7 @@ from sklearn.linear_model import LinearRegression
 
 def calculate_theoretical_max_precipitations(
     file_name: str,
-    duration: int,
+    duration: str,
     return_periods: list,
     results_dir: str = 'results',
     disag_factor: str = 'nan',
@@ -83,7 +83,7 @@ def calculate_theoretical_max_precipitations(
         file_name (str): Nome base do arquivo CSV contendo os dados de precipitação máxima subdiária. O arquivo deve 
                          estar localizado no diretório especificado por `results_dir` e conter uma coluna nomeada 
                          como `Max_{duration}` para cada duração específica.
-        duration (int): Duração específica do evento de precipitação em horas ou minutos (ex.: 1 hora, 6 horas). Deve 
+        duration (str): Duração específica do evento de precipitação em horas ou minutos (ex.: 1h, 6h). Deve 
                         corresponder ao nome da coluna `Max_{duration}` no arquivo CSV.
         return_periods (list): Lista de períodos de retorno (em anos) para os quais as precipitações máximas teóricas 
                                serão calculadas. Exemplo: [2, 5, 10, 25, 50, 100].
@@ -152,7 +152,8 @@ def calculate_theoretical_max_precipitations(
         ax.plot(sorted_data['RP'], sorted_data[max_col], label='Observado', linestyle='--', color='orange')
         ax.set(ylabel=f'Precipitação em {duration} (mm)', xlabel='Período de Retorno (Anos)', title=f'Distribuição: {best_params["distribution"]}')
         ax.legend()
-        plot_path = f'../graphs/distributions/quantile_plot_{file_name}_{disag}_{best_params["distribution"]}_subdaily_{duration}.png'
+        os.makedirs(f'{results_dir}/graphs/distribtuion', exist_ok=True)
+        plot_path = f'{results_dir}/graphs/distribtuion/quantile_plot_{file_name}_{disag}_{best_params["distribution"]}_subdaily_{duration}.png'
         fig.savefig(plot_path)
         plt.show()
         plt.close(fig)
@@ -441,12 +442,16 @@ def get_final_idf_params(
             - m (float): Expoente que descreve como a intensidade varia com o período de retorno.
     """
 
+
     # Calcula o valor ótimo de t0
     t0 = find_optimal_t0(name_file, [2, 5, 10, 25, 50, 100], directory, disag_factor)
+
 
     # Calcula o expoente n (relacionado à duração) usando o período de retorno de 2 anos (convenção)
     duration_based_results = calculate_duration_based_parameters(t0, name_file, [2], directory, disag_factor)
     n = abs(duration_based_results[2][2])  # Acessa o valor de n para o período de retorno de 2 anos
+
+        
 
     # Calcula K e m (relacionados ao período de retorno)
     _, K, m = calculate_return_period_based_parameters(t0, name_file, directory, disag_factor)
@@ -529,6 +534,7 @@ def plot_idf_curves(
         os.makedirs(plot_directory, exist_ok=True)  # Cria o diretório, se ele não existir
         plot_path = f'{plot_directory}/{name_file}_IDF_curves.png'
         plt.savefig(plot_path)
+        print(f"Gráfico salvo em: {plot_path}")
 
     # Exibe o gráfico
     plt.show()
