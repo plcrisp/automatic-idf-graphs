@@ -9,156 +9,108 @@ CETESB, CETESB otimizado e o método Bartlett-Lewis.
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 
-def plot_subdaily_maximum_absolute(name_file, variation_percentage=20):
+
+
+def plot_subdaily_maximum(name_file, directory='Results', var_value=0.2, relative=False):
     """
-    Gera gráficos de barras para os máximos subdiários de precipitação (1h, 6h, 8h, 10h, 12h, 24h)
-    comparando dados observados com referências CETESB (e variações de ±variation_percentage%).
+    Gera gráficos de precipitação subdiária absolutos ou relativos (diferença entre observado e CETESB).
 
     Parâmetros:
-    name_file (str): Nome base do arquivo (sem extensão), usado para carregar os arquivos de dados e salvar os gráficos.
-    variation_percentage (int): Percentagem para variação positiva e negativa em relação aos dados CETESB. Padrão é 20.
-
-    Etapas:
-    1. Carrega os arquivos de dados e concatena-os em um DataFrame único.
-    2. Gera gráficos de barras para cada intervalo de tempo, comparando os tipos de dados.
-    3. Salva cada gráfico em uma pasta específica para fácil acesso.
+    - name_file (str): Nome base dos arquivos.
+    - directory (str): Pasta onde os arquivos estão.
+    - var_value (float): Valor percentual para variações da CETESB (ex: 0.2 = 20%).
+    - relative (bool): Se True, plota diferenças (observado - CETESB); se False, plota valores absolutos.
 
     Retorno:
-    Nenhum. Gráficos são salvos em arquivos na pasta 'Graphs/subdaily'.
+    Nenhum. Gráficos são salvos nas pastas apropriadas.
     """
-    print('Starting plot of absolute subdaily maximums...\n')
 
-    # Carrega os arquivos de dados e adiciona uma coluna para identificar o tipo de dados
+    print(f"\nIniciando geração de gráficos {'relativos' if relative else 'absolutos'}...\n")
+
     file_paths = {
-        'Observed': f'Results/tests/max_subdaily_{name_file}.csv',
-        'CETESB': f'Results/tests/max_subdaily_{name_file}_ger.csv',
-        f'CETESB_-{variation_percentage}%': f'Results/tests/max_subdaily_{name_file}_m{variation_percentage/100:.1f}.csv',
-        f'CETESB_+{variation_percentage}%': f'Results/tests/max_subdaily_{name_file}_p{variation_percentage/100:.1f}.csv'
+        'Observado': f'{directory}/max_subdaily_{name_file}.csv',
+        'CETESB': f'{directory}/max_subdaily_{name_file}_ger.csv',
+        f'CETESB -{int(var_value * 100)}%': f'{directory}/max_subdaily_{name_file}_m{var_value}.csv',
+        f'CETESB +{int(var_value * 100)}%': f'{directory}/max_subdaily_{name_file}_p{var_value}.csv'
     }
-    
-    # Concatena os dados em um único DataFrame com o tipo de dados como coluna
+
     data_frames = []
-    for data_type, path in file_paths.items():
-        df = pd.read_csv(path)
-        df['Type'] = data_type
-        data_frames.append(df)
-    
-    # Combina todos os DataFrames em um único DataFrame final
+    for tipo, path in file_paths.items():
+        if os.path.exists(path):
+            df = pd.read_csv(path)
+            df['Tipo'] = tipo
+            data_frames.append(df)
+        else:
+            print(f'Arquivo não encontrado: {path} (Ignorando este tipo)')
+
+    if not data_frames:
+        print('Nenhum arquivo encontrado. Execução encerrada.')
+        return
+
     df_final = pd.concat(data_frames, ignore_index=True, sort=False)
-    df_final = df_final[['Year', 'Max_1h', 'Max_6h', 'Max_8h', 'Max_10h', 'Max_12h', 'Max_24h', 'Type']]
+    intervalos = ['Max_1h', 'Max_6h', 'Max_8h', 'Max_10h', 'Max_12h', 'Max_24h']
 
-    # Lista dos intervalos de tempo para gerar gráficos
-    intervals = ['Max_1h', 'Max_6h', 'Max_8h', 'Max_10h', 'Max_12h', 'Max_24h']
-    y_limit = 170  # Limite do eixo Y para todos os gráficos
+    if relative:
+        os.makedirs(f'{directory}/graphs/relative', exist_ok=True)
 
-    # Função auxiliar para gerar e salvar o gráfico de cada intervalo
-    def plot_interval(interval):
-        print(f'Generating plot for {interval}...')
-        
-        # Cria o gráfico de barras para o intervalo especificado
-        g = sns.catplot(
-            x="Year", y=interval, hue='Type', data=df_final, 
-            kind='bar', height=5, aspect=1.5
-        )
-        g.set_axis_labels('', 'Precipitation (mm)')
-        fig = g.figure
-        fig.subplots_adjust(bottom=0.15, top=0.9, left=0.07)
-        plt.xticks(rotation=50)
-        plt.title(f'Subdaily {name_file} - {interval.split("_")[1]}')
-        plt.ylim(0, y_limit)
-        
-        # Salva o gráfico em um arquivo
-        plt.savefig(f'Graphs/subdaily/{name_file}_{interval.lower()}.png')
-        print(f'Graph for {interval} saved!\n')
+        for intervalo in intervalos:
+            if 'Observado' not in df_final['Tipo'].values:
+                print(f'Dados observados não encontrados para {intervalo}. Pulando...')
+                continue
 
-    # Gera e salva os gráficos para cada intervalo
-    for interval in intervals:
-        plot_interval(interval)
+            df_obs = df_final[df_final['Tipo'] == 'Observado'].reset_index()
+            ref_dfs = {}
+            for tipo in df_final['Tipo'].unique():
+                if tipo == 'Observado':
+                    continue
+                ref_df = df_final[df_final['Tipo'] == tipo].reset_index()
+                if intervalo in df_obs.columns and intervalo in ref_df.columns:
+                    ref_df[f'Dif_{intervalo}'] = df_obs[intervalo] - ref_df[intervalo]
+                    ref_dfs[tipo] = ref_df
 
-    print('All subdaily maximum plots generated and saved!')
+            df_diff = pd.concat(ref_dfs.values(), ignore_index=True, sort=False)
 
-    
+            altura = 5
+            largura = max(1.5, min(3.5, len(df_obs['Year'].unique()) * 0.3))
 
+            g = sns.catplot(
+                x="Year", y=f'Dif_{intervalo}', hue='Tipo', data=df_diff,
+                kind='bar', height=altura, aspect=largura
+            )
+            g.set_axis_labels('', 'Diferença (mm)')
+            g.fig.subplots_adjust(bottom=0.15, top=0.9, left=0.07)
+            plt.xticks(rotation=50)
+            plt.title(f'Diferença Subdiária {name_file} - {intervalo.replace("Max_", "")}')
+            plt.axhline(0, color='black', linestyle='--', linewidth=1)
+            plt.savefig(f'{directory}/graphs/relative/{name_file}_{intervalo}_relative.png')
+            plt.close()
+            print(f'Gráfico de diferença salvo: {name_file}_{intervalo}_relative.png')
 
-def plot_subdaily_maximum_relative(name_file, max_hour, var_value):
-    """
-    Gera um gráfico das diferenças relativas entre os valores máximos subdiários observados e as referências CETESB.
-    
-    Parâmetros:
-    name_file (str): Nome base do arquivo (sem extensão), usado para carregar os dados e salvar os gráficos.
-    max_hour (int): Intervalo de tempo em horas para o qual as diferenças serão calculadas.
-    var_value (float): Valor de variação aplicado aos fatores CETESB (por exemplo, 0.2 para 20%).
-    
-    Etapas:
-    1. Carrega os dados de precipitação máxima observada e as referências CETESB (original, +20%, -20%).
-    2. Calcula a diferença entre os dados observados e cada referência para o intervalo especificado.
-    3. Gera um gráfico de barras que mostra essas diferenças ao longo dos anos, destacando o desvio de cada referência.
-    4. Salva o gráfico em um arquivo PNG para análise posterior.
-    
-    Retorno:
-    Nenhum. Gráfico é salvo em 'Graphs/subdaily_variations' com nome baseado nos parâmetros.
-    """
-    
-    print('Starting plotting relative subdaily maximums\n')
-    
-    # Carrega os arquivos de dados e adiciona a coluna de identificação do tipo de dados
-    file_paths = {
-        'Observed': f'Results/tests/max_subdaily_{name_file}.csv',
-        'CETESB': f'Results/tests/max_subdaily_{name_file}_ger.csv',
-        f'CETESB_-{var_value}': f'Results/tests/max_subdaily_{name_file}_m{var_value}.csv',
-        f'CETESB_+{var_value}': f'Results/tests/max_subdaily_{name_file}_p{var_value}.csv'
-    }
-    
-    # Concatena os dados em um único DataFrame com o tipo de dados como coluna
-    data_frames = []
-    for data_type, path in file_paths.items():
-        df = pd.read_csv(path)
-        df['Type'] = data_type
-        data_frames.append(df)
-    
-    # Combina todos os DataFrames em um único DataFrame final
-    df_final = pd.concat(data_frames, ignore_index=True, sort=False)
-    df_final = df_final[['Year', f'Max_{max_hour}h', 'Type']]
-    
-    # Separação dos dados observados e referências para cálculo de diferenças
-    df_observed = df_final[df_final['Type'] == 'Observed'].reset_index()
-    reference_dfs = {
-        'CETESB': df_final[df_final['Type'] == 'CETESB'].reset_index(),
-        f'CETESB_-{var_value}': df_final[df_final['Type'] == f'CETESB_-{var_value}'].reset_index(),
-        f'CETESB_+{var_value}': df_final[df_final['Type'] == f'CETESB_+{var_value}'].reset_index()
-    }
-    
-    # Calcula as diferenças entre os valores observados e cada referência
-    for ref_type, ref_df in reference_dfs.items():
-        ref_df[f'Dif_{max_hour}h'] = df_observed[f'Max_{max_hour}h'] - ref_df[f'Max_{max_hour}h']
-        reference_dfs[ref_type] = ref_df  # Atualiza com a nova coluna de diferença
-    
-    # Soma dos erros de cada referência (somatório das diferenças)
-    for ref_type, ref_df in reference_dfs.items():
-        sum_error = ref_df[f'Dif_{max_hour}h'].sum()
-        print(f'sum_error for {ref_type} / {var_value}: ', sum_error)
-        print('')
-    
-    # Concatena as diferenças em um DataFrame único para geração do gráfico
-    df_graph = pd.concat(reference_dfs.values(), ignore_index=True, sort=False)
-    
-    # Gera o gráfico de diferenças relativas
-    g = sns.catplot(
-        x="Year", y=f'Dif_{max_hour}h', hue='Type', data=df_graph,
-        kind='bar', height=5, aspect=1.5
-    )
-    g.set_axis_labels('', 'Precipitation (mm)')
-    fig = g.figure
-    fig.subplots_adjust(bottom=0.15, top=0.9, left=0.07)
-    plt.xticks(rotation=50)
-    plt.ylim(-100, 50)
-    plt.title(f'Subdaily {name_file} - {max_hour}h - {var_value}')
-    
-    # Salva o gráfico em um arquivo
-    output_path = f'Graphs/subdaily_variations/{name_file}_max{max_hour}_{var_value}_relative.png'
-    plt.savefig(output_path)
-    print(f'Graph for relative Max_{max_hour}h done and saved at {output_path}!\n')
+    else:
+        os.makedirs(f'{directory}/graphs/absolute', exist_ok=True)
+
+        df_final = df_final[['Year'] + intervalos + ['Tipo']]
+
+        for intervalo in intervalos:
+            altura = 5
+            largura = max(1.5, min(3.5, len(df_final["Year"].unique()) * 0.3))
+
+            g = sns.catplot(
+                x="Year", y=intervalo, hue='Tipo', data=df_final,
+                kind='bar', height=altura, aspect=largura
+            )
+            g.set_axis_labels('', 'Precipitação (mm)')
+            g.fig.subplots_adjust(bottom=0.15, top=0.9, left=0.07)
+            plt.xticks(rotation=50)
+            plt.ylim(0, 170)
+            plt.title(f'{name_file} - Máximo {intervalo.replace("Max_", "")}')
+            plt.savefig(f'{directory}/graphs/absolute/{name_file}_{intervalo}_absolute.png')
+            plt.close()
+            print(f'Gráfico absoluto salvo: {name_file}_{intervalo}_absolute.png')
+
+    print('\n✅ Finalizado!\n')
 
 
 
@@ -233,65 +185,4 @@ def plot_subdaily_maximum_BL(max_hour):
     plt.xticks(rotation=50)
     plt.savefig(f'Graphs/subdaily_bl/BL_max{max_hour}_relative.png')
     print(f'Gráfico das diferenças Max_{max_hour}h gerado com sucesso!\n')
-    
-
-
-def plot_optimized_subdaily(name_file, max_hour):
-    """
-    Gera um gráfico comparativo das diferenças entre as máximas de precipitação
-    observadas e as estimativas de duas fontes (CETESB e dados otimizados) para um intervalo de tempo específico.
-    
-    Args:
-        name_file (str): Nome do arquivo (sem extensão) que será utilizado para ler os dados de precipitação.
-        max_hour (int): Hora máxima a ser considerada nas diferenças de precipitação.
-    """
-    
-    print('Iniciando a plotagem das máximas subdiárias relativas...')
-    print('')
-
-    # Leitura dos dados observados, CETESB e otimizados
-    df_observed = pd.read_csv(f'Resultsmax_subdaily_{name_file}.csv')
-    df_observed['Type'] = 'Observado'
-
-    df_cetesb = pd.read_csv(f'Results/max_subdaily_{name_file}_ger.csv')
-    df_cetesb['Type'] = 'CETESB'
-
-    df_optimized = pd.read_csv(f'Results/max_subdaily_{name_file}_otimizado.csv')
-    df_optimized['Type'] = 'CETESB_otimizado'
-    
-    # Combinação dos DataFrames em um único DataFrame
-    df_final = pd.concat([df_observed, df_cetesb, df_optimized], ignore_index=True, sort=False)
-    df_final = df_final[['Year', 'Max_1h', 'Max_6h', 'Max_8h', 'Max_10h', 'Max_12h', 'Max_24h', 'Type']]
-    
-    # Processamento dos dados para calcular as diferenças
-    df_diff_cetesb = df_final[df_final['Type'] == 'CETESB'].reset_index()
-    df_diff_optimized = df_final[df_final['Type'] == 'CETESB_otimizado'].reset_index()
-    df_obs = df_final[df_final['Type'] == 'Observado'].reset_index()
-
-    # Cálculo das diferenças
-    df_diff_cetesb[f'Dif_{max_hour}h'] = df_obs[f'Max_{max_hour}h'] - df_diff_cetesb[f'Max_{max_hour}h']
-    df_diff_optimized[f'Dif_{max_hour}h'] = df_obs[f'Max_{max_hour}h'] - df_diff_optimized[f'Max_{max_hour}h']
-
-    # Soma dos erros
-    sum_error_cetesb = df_diff_cetesb[f'Dif_{max_hour}h'].sum()
-    sum_error_optimized = df_diff_optimized[f'Dif_{max_hour}h'].sum()
-    
-    print(f'Soma do erro CETESB: {sum_error_cetesb}\n')
-    print(f'Soma do erro otimizado: {sum_error_optimized}\n')
-
-    # Preparação dos dados para o gráfico
-    df_graph = pd.concat([df_diff_cetesb, df_diff_optimized], ignore_index=True, sort=False)
-
-    # Criação do gráfico de barras para as diferenças
-    g = sns.catplot(x="Year", y=f'Dif_{max_hour}h', hue='Type', data=df_graph, kind='bar', height=5, aspect=1.5)
-    g.set_axis_labels('', 'Precipitação')
-    fig = g.figure
-    fig.subplots_adjust(bottom=0.15, top=0.9, left=0.07)    
-    plt.xticks(rotation=50)
-    plt.ylim(-100, 50)
-    plt.title(f'Subdiário {name_file} - {max_hour}h - otimizados')
-
-    # Salvando o gráfico
-    plt.savefig(f'Graphs/subdaily_variations/{name_file}_max{max_hour}_opt_relative.png')
-    print(f'Gráfico das diferenças máximas de {max_hour}h concluído!\n')
     
