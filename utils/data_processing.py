@@ -93,7 +93,7 @@ def aggregate_to_csv(df, name, directory='Results'):
 
 
 # Função para ler CSV
-def read_csv(name, var, directory='Results'):
+def read_csv(path):
     """
     Lê um arquivo CSV gerado pela agregação.
     
@@ -105,7 +105,7 @@ def read_csv(name, var, directory='Results'):
     Retorna:
     DataFrame: O DataFrame lido do arquivo CSV.
     """
-    file_path = os.path.join(directory, f'{name}_{var}.csv')
+    file_path = os.path.join(path)
     return pd.read_csv(file_path)
 
 
