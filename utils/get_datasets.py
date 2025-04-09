@@ -16,8 +16,6 @@ class DataSource(Enum):
     CEMADEN = 'CEMADEN'
     INMET = 'INMET'
     INMET_DAILY = 'INMET_DAILY'
-    MAPLU = 'MAPLU'
-    MAPLU_USP = 'MAPLU_USP'
 
 def convert_to_numeric(df, columns):
     """
@@ -35,35 +33,35 @@ def convert_to_numeric(df, columns):
     return df
 
 
-def process_data(source: DataSource, data_path, year_start=None, year_end=None):
+def process_data(source: DataSource, data_path: str, site_filter: str = None):
     """
     Processa dados meteorológicos de diferentes fontes.
 
     Parâmetros:
-        source (DataSource): Enumeração que define as fontes válidas: 'CEMADEN', 'INMET', 'INMET_DAILY', 'MAPLU', 'MAPLU_USP'.
+        source (DataSource): Enumeração que define as fontes válidas: 'CEMADEN', 'INMET', 'INMET_DAILY'.
         data_path (str): Caminho para a pasta onde os dados estão armazenados.
-        year_start (int, opcional): Ano inicial para filtragem, se aplicável.
-        year_end (int, opcional): Ano final para filtragem, se aplicável.
-
+        site_filter (str, opcional): Nome da estação (Site) a ser filtrada no caso do CEMADEN.
 
     Retornos:
-        - Se source for 'CEMADEN': Retorna um dicionário de DataFrames separados por Site.
+        - Se source for 'CEMADEN':
+            - Se site_filter for fornecido: Retorna um único DataFrame com dados apenas da estação informada.
+            - Caso contrário: Levanta um erro informando que o parâmetro site_filter é obrigatório.
         - Se source for 'INMET' ou 'INMET_DAILY': Retorna dois DataFrames
           (DataFrame aut, DataFrame conv).
-        - Se source for 'MAPLU': Retorna dois DataFrames
-          (DataFrame Escola, DataFrame Posto).
-        - Se source for 'MAPLU_USP': Retorna um DataFrame (DataFrame USP).
 
     Exemplo de uso:
-        df1, df2 = process_data('INMET', '../datasets')
+        df = process_data(DataSource.CEMADEN, '../datasets', site_filter='AC Santana')
+        df_inmet = process_data(DataSource.INMET, '../datasets/inmet.csv')
     """
 
     if source == DataSource.CEMADEN:
+        if not site_filter:
+            raise ValueError("Para o DataSource.CEMADEN, o parâmetro 'site_filter' é obrigatório.")
+
         print("Processando dados do DataSource.CEMADEN...")
 
-        # Lê e concatena os arquivos CSV em um único DataFrame
-        # Obter todos os arquivos CSV no diretório especificado
-        cemaden_files = Path(data_path).glob('CEMADEN/*.csv')
+        # Lê todos os arquivos CSV no diretório
+        cemaden_files = Path(data_path).glob('*.csv')
 
         # Lê e concatena os arquivos CSV em um único DataFrame
         CEMADEN_df = pd.concat(
@@ -72,85 +70,61 @@ def process_data(source: DataSource, data_path, year_start=None, year_end=None):
             sort=False
         )
 
-        # Renomeia as colunas e seleciona as relevantes
-        CEMADEN_df.columns = ['1', '2', '3', '4', '5', '6', '7','8'] # a primeira coluna é desconsiderada, por isso os números estão deslocados em 1
-        CEMADEN_df = CEMADEN_df[['3', '6', '7']]
+        # Seleciona e renomeia colunas relevantes
+        CEMADEN_df = CEMADEN_df[['nomeEstacao', 'datahora', 'valorMedida']]
         CEMADEN_df.columns = ['Site', 'Date', 'Precipitation']
-        
 
-        # Substitui vírgulas por pontos nas precipitações
-        CEMADEN_df['Precipitation'] = CEMADEN_df['Precipitation'].str.replace(',', '.')
+        # Converte valores para o formato correto
+        CEMADEN_df['Precipitation'] = CEMADEN_df['Precipitation'].str.replace(',', '.', regex=False)
 
-        # Divide a coluna Date em Year, Month, Day, Hour
-        CEMADEN_df[['Year', 'Month', 'Day_hour']] = CEMADEN_df.Date.str.split("-", expand=True)
-        CEMADEN_df[['Day', 'Hour_min']] = CEMADEN_df.Day_hour.str.split(" ", expand=True)
-        CEMADEN_df[['Hour', 'Min', 'Seg']] = CEMADEN_df.Hour_min.str.split(":", expand=True)
+        # Converte a coluna de data para datetime
+        CEMADEN_df['Date'] = pd.to_datetime(CEMADEN_df['Date'], format='%Y-%m-%d %H:%M:%S.%f', errors='coerce')
 
-        # Seleciona as colunas relevantes para o DataFrame final
-        CEMADEN_df = CEMADEN_df[['Site', 'Year', 'Month', 'Day', 'Hour', 'Precipitation']]
-        
+        # Remove linhas com datas inválidas
+        CEMADEN_df = CEMADEN_df.dropna(subset=['Date'])
 
-        # Converte as colunas especificadas para numérico
+        # Extrai partes da data
+        CEMADEN_df['Year'] = CEMADEN_df['Date'].dt.year
+        CEMADEN_df['Month'] = CEMADEN_df['Date'].dt.month
+        CEMADEN_df['Day'] = CEMADEN_df['Date'].dt.day
+        CEMADEN_df['Hour'] = CEMADEN_df['Date'].dt.hour
+
+        # Converte para tipos numéricos
         CEMADEN_df = convert_to_numeric(CEMADEN_df, ['Year', 'Month', 'Day', 'Hour', 'Precipitation'])
 
-        # Criar um dicionário de DataFrames separados por Site
-        site_dfs = {site: CEMADEN_df[CEMADEN_df['Site'] == site] for site in CEMADEN_df['Site'].unique()}
+        # Agrupa por estação, ano, mês, dia e hora e soma as precipitações
+        CEMADEN_df = CEMADEN_df.groupby(['Site', 'Year', 'Month', 'Day', 'Hour'], as_index=False).agg({'Precipitation': 'sum'})
+        
+        # Mostra todas as estações ordenadas por quantidade de registros
+        print("\nOcorrências por estação (em ordem decrescente):")
+        for site, count in CEMADEN_df['Site'].value_counts().items():
+            print(f"- {site}: {count} registros")
 
-        return site_dfs
+        # Filtra a estação desejada
+        station_df = CEMADEN_df[CEMADEN_df['Site'] == site_filter]
+
+        if station_df.empty:
+            raise ValueError(f"Nenhum dado encontrado para a estação '{site_filter}'.")
+
+        return station_df
 
     elif source in {DataSource.INMET, DataSource.INMET_DAILY}:
         print(f"Processando dados do {source}...")
 
-
         df = pd.read_csv(data_path, sep=';')
-            
+
         if source == DataSource.INMET:
             df.columns = ['Date', 'Hour', 'Precipitation', 'Null']
             df = df[['Date', 'Hour', 'Precipitation']]
             df['Hour'] = df['Hour'].astype(float) / 100  # Converte hora para formato decimal
-            df[['Year', 'Month', 'Day']] = df.Date.str.split("-", expand=True) 
+            df[['Year', 'Month', 'Day']] = df.Date.str.split("-", expand=True)
             return convert_to_numeric(df, ['Year', 'Month', 'Day', 'Hour'])
-        
+
         if source == DataSource.INMET_DAILY:
             df.columns = ['Date', 'Precipitation', 'Null']
             df = df[['Date', 'Precipitation']]
-            df[['Year', 'Month', 'Day']] = df.Date.str.split("-", expand=True) 
+            df[['Year', 'Month', 'Day']] = df.Date.str.split("-", expand=True)
             return convert_to_numeric(df, ['Year', 'Month', 'Day'])
 
-    elif source == DataSource.MAPLU:
-        print("Processando dados do DataSource.MAPLU...")
-
-        def process_maplu_data(file_path, site_name):
-            """Processa dados específicos do MAPLU."""
-            df = pd.read_csv(file_path)
-            df.columns = ['Site', 'Date', 'Precipitation']
-            df['Site'] = site_name
-            df[['Year', 'Month', 'Day_hour']] = df.Date.str.split("-", expand=True)
-            df[['Day', 'Hour_min']] = df.Day_hour.str.split(" ", expand=True)
-            df[['Hour', 'Min']] = df.Hour_min.str.split(":", expand=True)
-            df = df[['Site', 'Year', 'Month', 'Day', 'Hour', 'Min', 'Precipitation']]
-            return convert_to_numeric(df, ['Year', 'Month', 'Day', 'Hour', 'Min', 'Precipitation'])
-
-        # Processa os dados da Escola e do Posto de Saúde
-        esc_df = pd.concat(
-            [process_maplu_data(f'{data_path}/MAPLU/escola{i}.csv', 'Escola Sao Bento') for i in range(year_start, year_end + 1)],
-            ignore_index=True
-        )
-        posto_df = pd.concat(
-            [process_maplu_data(f'{data_path}/MAPLU/postosaude{i}.csv', 'Posto Santa Felicia') for i in range(year_start, year_end + 1)],
-            ignore_index=True
-        )
-
-        return esc_df, posto_df
-
-    elif source == DataSource.MAPLU_USP:
-        print("Processando dados do DataSource.MAPLU_USP...")
-
-        # Lê e processa os dados da USP
-        usp_df = pd.read_csv(f'{data_path}/MAPLU/USP2.csv')
-        usp_df[['Hour', 'Min']] = usp_df.Time.str.split(":", expand=True)
-        usp_df = usp_df[['Year', 'Month', 'Day', 'Hour', 'Min', 'Precipitation']]
-        return convert_to_numeric(usp_df, ['Year', 'Month', 'Day', 'Hour', 'Min', 'Precipitation'])
-    
     else:
         raise ValueError(f"Fonte '{source}' não suportada.")
