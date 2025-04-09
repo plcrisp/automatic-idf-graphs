@@ -8,55 +8,71 @@ from utils.intervals_manipulation import get_subdaily_from_disagregation_factors
 from utils.get_distribution import get_distribution
 from utils.idf_generator import *
 
-# Processamento dos dados diários do INMET
-inmet_sp = process_data(source=DataSource.INMET_DAILY, data_path='./datasets/INMET_SP/sp-1961-2025.csv')
-aggregate_to_csv(df=inmet_sp, name='inmet_sp', directory='results/inmet_sp')
+
+
+# Processamento dos dados do CEMADEN
+cemaden_pirajussara = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='Pirajussara', show_station_counts=True)
+aggregate_to_csv(df=cemaden_pirajussara, name='cemaden_pirajussara', directory='results/cemaden_pirajussara')
 
 # Leitura dos dados agregados
-i_sp_yearly = read_csv(path='results/inmet_sp/inmet_sp_yearly.csv')
-i_sp_monthly = read_csv(path='results/inmet_sp/inmet_sp_monthly.csv')
-i_sp_daily = read_csv(path='results/inmet_sp/inmet_sp_daily.csv')
+cemaden_pirajussara_daily = read_csv(path='results/cemaden_pirajussara/cemaden_pirajussara_daily.csv')
+
+# Verificação de dias faltantes
+verification(cemaden_pirajussara_daily)
+
+
+'''
+# Processamento dos dados diários do INMET
+inmet_santana = process_data(source=DataSource.INMET_DAILY, data_path='./datasets/INMET_santana/santana-1961-2025.csv')
+aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inmet_santana')
+
+# Leitura dos dados agregados
+i_santana_yearly = read_csv(path='results/inmet_santana/inmet_santana_yearly.csv')
+i_santana_monthly = read_csv(path='results/inmet_santana/inmet_santana_monthly.csv')
+i_santana_daily = read_csv(path='results/inmet_santana/inmet_santana_daily.csv')
 
 # Visualização da distribuição das chuvas
-distribution_plot_df(i_sp_daily, show_max=True)
+distribution_plot_df(i_santana_daily, show_max=True)
 
 # Preenchimento e verificação de dados faltantes
-i_sp_daily = fill_missing_data(path='results/inmet_sp/inmet_sp_daily.csv')
-verification(i_sp_daily)
+i_santana_daily = fill_missing_data(path='results/inmet_santana/inmet_santana_daily.csv')
+verification(i_santana_daily)
 
 # Cálculo do percentil 90 de precipitação
-calculate_p90(df=i_sp_daily)
+calculate_p90(df=i_santana_daily)
 
 # Extração da precipitação máxima anual
-max_i_sp = max_annual_precipitation(df=i_sp_daily, name_file='inmet_sp', output_dir='results/inmet_sp')
+max_i_santana = max_annual_precipitation(df=i_santana_daily, name_file='inmet_santana', output_dir='results/inmet_santana')
 
 # Desagregação subdiária para diferentes cenários
 for scenario in [DisaggregationScenario.BASE, DisaggregationScenario.UMIDO, DisaggregationScenario.SECO]:
     get_subdaily_from_disagregation_factors(
-        df=max_i_sp,
+        df=max_i_santana,
         scenario=scenario,
         var_value=0.2,
-        name_file='inmet_sp',
-        directory='results/inmet_sp'
+        name_file='inmet_santana',
+        directory='results/inmet_santana'
     )
 
 # Plotagens dos máximos subdiários absolutos e relativos
-plot_subdaily_maximum(name_file='inmet_sp', directory='results/inmet_sp', var_value=0.2)
-plot_subdaily_maximum(name_file='inmet_sp', directory='results/inmet_sp', var_value=0.2, relative=True)
+plot_subdaily_maximum(name_file='inmet_santana', directory='results/inmet_santana', var_value=0.2)
+plot_subdaily_maximum(name_file='inmet_santana', directory='results/inmet_santana', var_value=0.2, relative=True)
 
 # Ajuste e visualização das distribuições estatísticas
-get_distribution(name_file='inmet_sp', directory='results/inmet_sp')
-get_distribution(name_file='inmet_sp', directory='results/inmet_sp', disag_factor='_p0.2', duration='Max_24h')
+get_distribution(name_file='inmet_santana', directory='results/inmet_santana')
+get_distribution(name_file='inmet_santana', directory='results/inmet_santana', disag_factor='_p0.2', duration='Max_24h')
 
 # Geração e plotagem das curvas IDF finais
 get_final_idf_params(
-    name_file='inmet_sp',
-    directory='results/inmet_sp',
+    name_file='inmet_santana',
+    directory='results/inmet_santana',
     disag_factor='p0.2',
     save_file=True,
     plot=True,
     durations=[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60],
     return_periods=[2, 5, 10, 25, 50, 100, 200, 500, 1000],
     save_plot=True,
-    plot_directory='results/inmet_sp/graphs/idf',
+    plot_directory='results/inmet_santana/graphs/idf',
 )
+
+'''

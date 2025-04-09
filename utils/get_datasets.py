@@ -33,7 +33,19 @@ def convert_to_numeric(df, columns):
     return df
 
 
-def process_data(source: DataSource, data_path: str, site_filter: str = None):
+
+def print_station_record_counts(df: pd.DataFrame, site_column: str = 'Site'):
+    """
+    Exibe a contagem de registros por estação, em ordem decrescente.
+    """
+    print("\nOcorrências por estação (em ordem decrescente):")
+    for site, count in df[site_column].value_counts().items():
+        print(f"- {site}: {count} registros")
+        
+
+
+
+def process_data(source: DataSource, data_path: str, site_filter: str = None, show_station_counts: bool = False):
     """
     Processa dados meteorológicos de diferentes fontes.
 
@@ -41,6 +53,7 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None):
         source (DataSource): Enumeração que define as fontes válidas: 'CEMADEN', 'INMET', 'INMET_DAILY'.
         data_path (str): Caminho para a pasta onde os dados estão armazenados.
         site_filter (str, opcional): Nome da estação (Site) a ser filtrada no caso do CEMADEN.
+        show_station_counts (bool, opcional): Se True, exibe a contagem de registros por estação (apenas para CEMADEN).
 
     Retornos:
         - Se source for 'CEMADEN':
@@ -95,10 +108,8 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None):
         # Agrupa por estação, ano, mês, dia e hora e soma as precipitações
         CEMADEN_df = CEMADEN_df.groupby(['Site', 'Year', 'Month', 'Day', 'Hour'], as_index=False).agg({'Precipitation': 'sum'})
         
-        # Mostra todas as estações ordenadas por quantidade de registros
-        print("\nOcorrências por estação (em ordem decrescente):")
-        for site, count in CEMADEN_df['Site'].value_counts().items():
-            print(f"- {site}: {count} registros")
+        if show_station_counts:
+            print_station_record_counts(CEMADEN_df)
 
         # Filtra a estação desejada
         station_df = CEMADEN_df[CEMADEN_df['Site'] == site_filter]
