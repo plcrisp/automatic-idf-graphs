@@ -405,7 +405,7 @@ def calculate_return_period_based_parameters(t0, name_file, directory='Results',
 
    
 
-def get_final_idf_params(
+def get_final_idf(
     name_file,
     directory='Results',
     disag_factor='nan',
@@ -414,32 +414,36 @@ def get_final_idf_params(
     durations=None,
     return_periods=None,
     save_plot=False,
-    plot_directory='../graphs'
+    plot_directory='../graphs',
+    generate_tables=False
 ):
     """
-    Calcula os parâmetros finais da curva IDF e, opcionalmente, salva os resultados em um arquivo CSV 
-    e/ou plota as curvas IDF.
+    Calcula os parâmetros finais da curva IDF (t0, n, K, m), podendo também gerar as tabelas de intensidade 
+    e precipitação e/ou plotar as curvas.
 
     Parâmetros:
         name_file (str): Nome do arquivo base contendo os dados de precipitação.
-        directory (str, opcional): Diretório onde os arquivos CSV estão armazenados. Padrão: 'Results'.
-        disag_factor (str, opcional): Fator de desagregação usado para ajustar os dados. Padrão: 'nan'.
-        save_file (bool, opcional): Indica se os parâmetros devem ser salvos em um arquivo CSV. Padrão: False.
-        plot (bool, opcional): Indica se as curvas IDF devem ser plotadas. Padrão: False.
-        durations (list, opcional): Lista de durações dos eventos de precipitação (em minutos). 
-                                    Padrão: [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 720, 1440].
-        return_periods (list, opcional): Lista de períodos de retorno (em anos). 
-                                         Padrão: [1, 2, 5, 10, 25, 50, 100, 200, 500, 1000].
-        save_plot (bool, opcional): Indica se o gráfico deve ser salvo em um arquivo. Padrão: False.
-        plot_directory (str, opcional): Diretório onde o gráfico será salvo, se `save_plot=True`. 
-                                        Padrão: '../graphs'.
+        directory (str, opcional): Diretório onde os arquivos de entrada e saída estão localizados. Padrão: 'Results'.
+        disag_factor (str, opcional): Fator de desagregação usado no nome dos arquivos. Padrão: 'nan'.
+        save_file (bool, opcional): Se True, salva os parâmetros e/ou tabelas geradas como arquivos CSV. Padrão: False.
+        plot (bool, opcional): Se True, plota as curvas IDF com os parâmetros calculados. Padrão: False.
+        durations (list[int], opcional): Lista de durações (em minutos) para as tabelas e gráficos. 
+                                         Padrão: [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 720, 1440].
+        return_periods (list[int], opcional): Lista de períodos de retorno (em anos) para as tabelas e gráficos. 
+                                              Padrão: [2, 5, 10, 25, 50, 100].
+        save_plot (bool, opcional): Se True, salva o gráfico gerado. Requer plot=True. Padrão: False.
+        plot_directory (str, opcional): Caminho do diretório onde o gráfico será salvo. Padrão: '../graphs'.
+        generate_tables (bool, opcional): Se True, gera as tabelas de intensidade e precipitação a partir dos 
+                                          parâmetros calculados. Padrão: False.
 
     Retorna:
         tuple: Uma tupla contendo:
-            - t0 (float): Constante usada na linearização da curva IDF.
-            - n (float): Expoente que descreve como a intensidade varia com a duração.
-            - K (float): Coeficiente relacionado à magnitude das intensidades de precipitação.
-            - m (float): Expoente que descreve como a intensidade varia com o período de retorno.
+            - t0 (float): Constante associada à duração na equação IDF.
+            - n (float): Expoente associado à duração.
+            - K (float): Coeficiente que depende da localidade e intensidade da chuva.
+            - m (float): Expoente associado ao período de retorno.
+            - df_intensity (DataFrame | None): Tabela de intensidades (mm/h) se generate_tables=True, senão None.
+            - df_precipitation (DataFrame | None): Tabela de precipitações acumuladas (mm) se generate_tables=True, senão None.
     """
 
 
@@ -477,8 +481,40 @@ def get_final_idf_params(
             plot_directory=plot_directory,
             name_file=name_file,
         )
+        
+    # Gera as tabelas diretamente
+    df_intensity, df_precipitation = None, None
+    if generate_tables:
+        if durations is None:
+            durations = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 720, 1440]
+        if return_periods is None:
+            return_periods = [2, 5, 10, 25, 50, 100]
 
-    return t0, n, K, m
+        i_final, P_final = [], []
+        for RP in return_periods:
+            i_list, P_list = [], []
+            for d in durations:
+                i_prec = K * (RP ** m) / ((d + t0) ** n)
+                i_list.append(i_prec)
+                P_list.append(i_prec * d / 60)
+            i_final.append(i_list)
+            P_final.append(P_list)
+
+        # Monta DataFrames
+        df_intensity = pd.DataFrame(i_final).T
+        df_intensity.columns = [f'i_RP_{rp}' for rp in return_periods]
+        df_intensity['d'] = durations
+
+        df_precipitation = pd.DataFrame(P_final).T
+        df_precipitation.columns = [f'P_RP_{rp}' for rp in return_periods]
+        df_precipitation['d'] = durations
+
+        # Salva tabelas
+        if save_file:
+            df_intensity.to_csv(f'{directory}/{name_file}_{disag_factor}_intensityfromIDF_subdaily.csv', index=False)
+            df_precipitation.to_csv(f'{directory}/{name_file}_{disag_factor}_precipitationfromIDF_subdaily.csv', index=False)
+
+    return t0, n, K, m, df_intensity, df_precipitation
 
 
 
@@ -539,116 +575,3 @@ def plot_idf_curves(
     # Exibe o gráfico
     plt.show()
     plt.close()
-    
-    
-    
-def generate_idf_tables(
-    name_file: str,
-    disag_factor: str,
-    directory: str = '../results',
-    durations=None,
-    return_periods=None,    
-    save_tables: bool = True
-) -> tuple:
-    """
-    Gera tabelas de intensidade e precipitação para diferentes durações e períodos de retorno 
-    com base nos parâmetros IDF pré-calculados.
-    
-    Parâmetros:
-        name_file (str): Nome da estação meteorológica ou identificador da série de dados.
-        disag_factor (str): Fator de desagregação usado para ajustar os dados.
-        directory (str, opcional): Diretório onde os arquivos IDF estão armazenados. Padrão: 'results'.
-        durations (list, opcional): Lista de durações dos eventos de precipitação (em minutos). 
-                                    Padrão: [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 720, 1440].
-        return_periods (list, opcional): Lista de períodos de retorno (em anos). 
-                                         Padrão: [1, 2, 5, 10, 25, 50, 100, 200, 500, 1000].
-        save_tables (bool, opcional): Indica se as tabelas geradas devem ser salvas em arquivos CSV. 
-                                      Padrão: True.
-    
-    Retorna:
-        tuple: Uma tupla contendo:
-            - df_intensity (pd.DataFrame): Tabela de intensidades de precipitação para diferentes 
-                                           durações e períodos de retorno.
-            - df_precipitation (pd.DataFrame): Tabela de precipitações acumuladas para diferentes 
-                                               durações e períodos de retorno.
-    """
-
-    # Constrói o caminho do arquivo IDF com base no nome da estação e no diretório fornecido
-    idf_file_path = f'{directory}/IDF_params_{name_file}_{disag_factor}.csv'
-
-   # Lê os parâmetros IDF do arquivo CSV correspondente à estação
-    try:
-        df_IDF_params = pd.read_csv(idf_file_path)
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Arquivo IDF não encontrado: {idf_file_path}")
-
-    # Verifica se há dados correspondentes
-    if df_IDF_params.empty:
-        raise ValueError("Nenhum parâmetro IDF encontrado para os critérios fornecidos.")
-
-    # Extrai os parâmetros IDF
-    K = df_IDF_params['K'][0]
-    t0 = df_IDF_params['t0'][0]
-    m = df_IDF_params['m'][0]
-    n = df_IDF_params['n'][0]
-    
-    # Define valores padrão para durations e return_periods, se não forem fornecidos
-    if durations is None:
-        durations = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 720, 1440]
-    if return_periods is None:
-        return_periods = [2, 5, 10, 25, 50, 100]
-
-
-    # Calcula as intensidades e precipitações para cada período de retorno e duração
-    i_final, P_final = [], []
-    for RP in return_periods:
-        i_list, P_list = [], []
-        for d in durations:
-            i_prec = K * (RP ** m) / ((d + t0) ** n)
-            i_list.append(i_prec)
-            P_list.append(i_prec * d / 60)  # Precipitação acumulada em mm
-        i_final.append(i_list)
-        P_final.append(P_list)
-
-    # Cria os DataFrames para intensidade e precipitação
-    columns = [f'i_RP_{rp}' for rp in return_periods]
-    df_intensity = pd.DataFrame(i_final).transpose()
-    df_intensity.columns = columns
-    df_intensity['d'] = durations
-
-    columns = [f'P_RP_{rp}' for rp in return_periods]
-    df_precipitation = pd.DataFrame(P_final).transpose()
-    df_precipitation.columns = columns
-    df_precipitation['d'] = durations
-
-    # Salva as tabelas em arquivos CSV, se necessário
-    if save_tables:
-        output_dir = f'{directory}'
-        intensity_file = f'{output_dir}/{name_file}_{disag_factor}_intensityfromIDF_subdaily.csv'
-        precipitation_file = f'{output_dir}/{name_file}_{disag_factor}_precipitationfromIDF_subdaily.csv'
-        
-        df_intensity.to_csv(intensity_file, index=False)
-        df_precipitation.to_csv(precipitation_file, index=False)
-
-    return df_intensity, df_precipitation
-    
-
-
-if __name__ == '__main__':
-    
-    t0, n, K, m = get_final_idf_params(
-        name_file='inmet',
-        directory='../results',
-        disag_factor='p0.2',
-        save_file=True,
-        plot=True,
-        durations=[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60],
-        return_periods=[2, 5, 10, 25, 50, 100, 200, 500, 1000],
-        save_plot=True,
-    )
-    
-    df_intensity, df_precipitation = generate_idf_tables(
-        name_file='inmet',
-        disag_factor='p0.2', 
-        save_tables=True
-    )
