@@ -79,6 +79,18 @@ import matplotlib.pyplot as plt
 import math
 import seaborn as sns
 
+from enum import Enum
+
+
+
+class CommonDistributions(Enum):
+    NORMAL = ("Normal", st.norm)
+    LOGNORMAL = ("Log-normal", st.lognorm)
+    PARETO = ("Pareto", st.pareto)
+    GUMBEL_R = ("Gumbel (direita)", st.gumbel_r)
+    GEV = ("Generalized Extreme Value (GEV)", st.genextreme)
+    GENLOGISTIC = ("Generalized Logistic", st.genlogistic)
+
 
 
 def get_common_distributions():
@@ -136,36 +148,35 @@ def calculate_bins(data):
 
 
 
-def plot_histogram(data, results, n):
+def plot_histogram(data, results, n, distributions=None):
     """
     Plota um histograma dos dados fornecidos e sobrepõe as distribuições ajustadas.
-
-    Esta função exibe um histograma representando os dados fornecidos e traça as primeiras
-    'n' distribuições ajustadas a partir do ranking fornecido em 'results'. O número de bins
-    é calculado usando a função `calculate_bins`. A seleção das distribuições é feita usando
-    a função `get_top_fitted_distributions`.
 
     Parâmetros:
         data (array-like): Conjunto de dados numéricos para o histograma.
         results (dict): Dicionário contendo distribuições ajustadas. 
-            A estrutura esperada é {distribuição: (SSE, arg, loc, scale)}.
-        n (int): Número de distribuições do ranking a serem sobrepostas no gráfico.
+            Estrutura esperada: {CommonDistributions: (SSE, arg, loc, scale)}.
+        n (int): Número de distribuições do ranking a serem sobrepostas.
+        distributions (list of CommonDistributions, optional): Lista de distribuições específicas. 
+            Se fornecida, ignora o 'n' e plota apenas essas.
 
     Retorna:
-        None: A função exibe o gráfico, mas não retorna valores.
+        None: Apenas exibe o gráfico.
     """
-    if n <= 0:
-        raise ValueError("O número de distribuições (n) deve ser maior que zero.")
-    if len(results) < n:
-        raise ValueError(f"O número de distribuições disponíveis ({len(results)}) é menor que n ({n}).")
-    
-    # Usa a função `get_top_fitted_distributions` para obter as 'n' melhores distribuições ajustadas
-    top_distributions_df = get_top_fitted_distributions(data, results, n)
-    
-    # Calcula o número ideal de bins usando a função `calculate_bins`
+    if distributions is not None:
+        if not all(isinstance(d, CommonDistributions) for d in distributions):
+            raise TypeError("O parâmetro 'distributions' deve ser uma lista de CommonDistributions.")
+        selected_distributions = {d: results[d] for d in distributions if d in results}
+        if not selected_distributions:
+            raise ValueError("Nenhuma das distribuições fornecidas está presente nos resultados.")
+    else:
+        if n <= 0:
+            raise ValueError("O número de distribuições (n) deve ser maior que zero.")
+        if len(results) < n:
+            raise ValueError(f"O número de distribuições disponíveis ({len(results)}) é menor que n ({n}).")
+        selected_distributions = dict(list(results.items())[:n])
+
     num_bins = calculate_bins(data)
-    
-    # Configurações do histograma
     plt.figure(figsize=(10, 5))
     plt.hist(data, density=True, bins=num_bins, ec='white', 
              color=(63/235, 149/235, 170/235), alpha=0.75, label='Dados observados')
@@ -173,161 +184,115 @@ def plot_histogram(data, results, n):
     plt.xlabel('Precipitação Máxima [mm]', fontsize=12)
     plt.ylabel('Densidade de Probabilidade', fontsize=12)
 
-    # Define uma paleta de cores distinta
-    colors = sns.color_palette("husl", n_colors=n)  # Paleta "husl" do Seaborn
+    colors = sns.color_palette("husl", n_colors=len(selected_distributions))
+    x_plot = np.linspace(min(data), max(data), 1000)
 
-    # Itera sobre as distribuições ajustadas e plota suas PDFs
-    for idx, (_, row) in enumerate(top_distributions_df.iterrows()):
-        distribution_name = row['distribution']
-        sse = row['sse']
-        c = row['c']
-        loc = row['loc']
-        scale = row['scale']
-        
-        # Recupera a distribuição correspondente ao nome
-        distribution = next(dist for dist in get_common_distributions() if dist.name.capitalize() == distribution_name)
-        
-        # Define os argumentos adicionais (`arg`) se existirem
-        arg = (c,) if not np.isnan(c) else ()
-        
-        # Gera a PDF da distribuição
-        x_plot = np.linspace(min(data), max(data), 1000)
-        y_plot = distribution.pdf(x_plot, loc=loc, scale=scale, *arg)
-        
-        # Plota a distribuição com uma cor distinta
+    for idx, (dist_enum, (sse, arg, loc, scale)) in enumerate(selected_distributions.items()):
+        y_plot = dist_enum.value[1].pdf(x_plot, loc=loc, scale=scale, *arg)
         plt.plot(
             x_plot, y_plot, 
-            label=f"{distribution_name}: SSE = {sse:.4f}",
+            label=f"{dist_enum.name.capitalize()}: SSE = {sse:.4f}",
             color=colors[idx]
         )
 
-    # Configuração da legenda
     plt.legend(title='Distribuições', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
 
  
 
-def fit_data(data):
+def fit_data(data, distributions=None):
     """
-    Ajusta distribuições teóricas comuns aos dados fornecidos, calcula o erro de ajuste (SSE) 
+    Ajusta distribuições teóricas aos dados fornecidos, calcula o erro de ajuste (SSE) 
     e retorna os resultados ordenados pelo erro.
 
     Parâmetros:
         data (array-like): Conjunto de dados numéricos a serem ajustados.
+        distributions (list of CommonDistributions, opcional): Enum de distribuições a serem usadas.
+                                                               Se None, usa as distribuições padrão.
 
     Retorna:
         dict: Dicionário contendo as distribuições ajustadas com os erros (SSE), 
               parâmetros de ajuste (loc, scale, arg).
     """
-    # Validação do parâmetro 'data'
     if not isinstance(data, (list, np.ndarray)):
         raise TypeError("O parâmetro 'data' deve ser uma lista ou um array NumPy.")
     if len(data) < 2:
         raise ValueError("O conjunto de dados 'data' deve ter pelo menos dois elementos.")
 
-    # Obtém a lista de distribuições comuns para ajuste
-    COMMON_DISTRIBUTIONS = get_common_distributions()
+    # Verificação e obtenção das distribuições
+    if distributions is None:
+        distributions = list(CommonDistributions)
+    else:
+        if not all(isinstance(d, CommonDistributions) for d in distributions):
+            raise TypeError("O parâmetro 'distributions' deve ser uma lista de CommonDistributions.")
 
-    # Calcula o número ideal de bins para o histograma usando a fórmula de Doane
-    # Isso garante que o histograma represente bem a distribuição dos dados.
+    # Histograma
     num_bins = calculate_bins(data)
-
-    # Gera o histograma dos dados observados
-    # `frequencies`: Densidades normalizadas do histograma (soma total = 1).
-    # `bin_edges`: Limites dos bins (intervalos) do histograma.
     frequencies, bin_edges = np.histogram(data, bins=num_bins, density=True)
-
-    # Calcula os valores centrais de cada bin
-    # Os valores centrais são usados para avaliar as funções de densidade de probabilidade (PDFs)
-    # das distribuições teóricas nos mesmos pontos do histograma.
     central_values = [(bin_edges[i] + bin_edges[i+1]) / 2 for i in range(len(bin_edges) - 1)]
 
-    # Inicializa o dicionário para armazenar os resultados de cada distribuição
     results = {}
 
-    # Itera sobre as distribuições comuns para ajustá-las aos dados
-    for distribution in COMMON_DISTRIBUTIONS:
+    for enum_dist in distributions:
+        distribution = enum_dist.value[1]
         try:
-            # Ajusta os parâmetros da distribuição aos dados
-            # `params` contém todos os parâmetros ajustados (loc, scale e argumentos adicionais, se houver).
             params = distribution.fit(data)
-
-            # Separa os parâmetros ajustados:
-            # - `arg`: Argumentos adicionais da distribuição (ex.: forma, etc.).
-            # - `loc`: Parâmetro de localização (deslocamento horizontal).
-            # - `scale`: Parâmetro de escala (dispersão).
             arg = params[:-2]
             loc = params[-2]
             scale = params[-1]
-
-            # Avalia a função de densidade de probabilidade (PDF) da distribuição ajustada
-            # nos valores centrais dos bins do histograma.
             pdf_values = distribution.pdf(central_values, loc=loc, scale=scale, *arg)
-
-            # Calcula o erro quadrático somado (SSE) entre o histograma dos dados observados
-            # e a PDF ajustada. O SSE mede quão bem a distribuição se ajusta aos dados.
             sse = np.sum(np.power(frequencies - pdf_values, 2.0))
-
-            # Armazena os resultados da distribuição:
-            # - `sse`: Erro quadrático somado.
-            # - `arg`: Argumentos adicionais da distribuição.
-            # - `loc`: Parâmetro de localização.
-            # - `scale`: Parâmetro de escala.
-            results[distribution] = [sse, arg, loc, scale]
-        except Exception as e:
-            # Ignora distribuições que falham ao ajustar os dados
+            results[enum_dist] = [sse, arg, loc, scale]
+        except Exception:
             continue
 
-    # Ordena os resultados pelo erro (SSE) em ordem crescente
-    # Isso permite identificar as distribuições que melhor se ajustam aos dados.
     sorted_results = {k: results[k] for k in sorted(results, key=lambda x: results[x][0])}
-
     return sorted_results
 
 
 
-def plot_cdf_comparison(data, results, n):
+def plot_cdf_comparison(data, results, n, distributions=None):
     """
     Avalia o ajuste de distribuições aos dados e plota as funções de distribuição cumulativa (CDF).
 
     Parâmetros:
         data (array-like): Conjunto de dados numéricos.
         results (dict): Dicionário contendo distribuições ajustadas. 
-            Estrutura esperada: {distribuição: (SSE, arg, loc, scale)}.
+            Estrutura esperada: {CommonDistributions: (SSE, arg, loc, scale)}.
         n (int): Número de distribuições do ranking a serem avaliadas.
-        mean (float, optional): Média teórica ou esperada para testes de ajuste. Default é None.
+        distributions (list of CommonDistributions, optional): Lista de distribuições a serem usadas.
+            Se None, usa as 'n' melhores do ranking.
 
     Retorna:
-        None: A função realiza o gráfico opcional e não retorna valores.
+        None: A função apenas exibe o gráfico.
     """
-    if n <= 0:
-        raise ValueError("O número de distribuições (n) deve ser maior que zero.")
-    if len(results) < n:
-        raise ValueError(f"O número de distribuições disponíveis ({len(results)}) é menor que n ({n}).")
+    if distributions is not None:
+        if not all(isinstance(d, CommonDistributions) for d in distributions):
+            raise TypeError("O parâmetro 'distributions' deve ser uma lista de CommonDistributions.")
+        selected_distributions = {d: results[d] for d in distributions if d in results}
+        if not selected_distributions:
+            raise ValueError("Nenhuma das distribuições fornecidas está presente nos resultados.")
+    else:
+        if n <= 0:
+            raise ValueError("O número de distribuições (n) deve ser maior que zero.")
+        if len(results) < n:
+            raise ValueError(f"O número de distribuições disponíveis ({len(results)}) é menor que n ({n}).")
+        selected_distributions = dict(list(results.items())[:n])
     
-    # Seleciona as primeiras 'n' distribuições do ranking
-    selected_distributions = dict(list(results.items())[:n])
-    
-    # Plota as CDFs das distribuições
+    # Plota as CDFs
     plt.figure(figsize=(10, 5))
-    x_plot = np.linspace(min(data), max(data), 1000)  # Calcula uma única vez para todas as distribuições
-    
-    # Define uma paleta de cores distinta
-    colors = sns.color_palette("husl", n_colors=n)  # Paleta "husl" do Seaborn
+    x_plot = np.linspace(min(data), max(data), 1000)
+    colors = sns.color_palette("husl", n_colors=len(selected_distributions))
 
-    for idx, (distribution, (sse, arg, loc, scale)) in enumerate(selected_distributions.items()):
-        # Calcula a CDF para a distribuição
-        y_plot = distribution.cdf(x_plot, loc=loc, scale=scale, *arg)
-        
-        # Plota a CDF com uma cor distinta
+    for idx, (dist_enum, (sse, arg, loc, scale)) in enumerate(selected_distributions.items()):
+        y_plot = dist_enum.value[1].cdf(x_plot, loc=loc, scale=scale, *arg)
         plt.plot(
-            x_plot, y_plot, 
-            label=f"{distribution.name.capitalize()}: SSE = {sse:.4f}",
+            x_plot, y_plot,
+            label=f"{dist_enum.name.capitalize()}: SSE = {sse:.4f}",
             color=colors[idx]
         )
-    
-    # Configurações do gráfico
+
     plt.title(f'Funções de Distribuição Cumulativa (CDF)\nMáximos de Chuva [mm]', fontsize=14)
     plt.xlabel('Precipitação Máxima [mm]', fontsize=12)
     plt.ylabel('Probabilidade Acumulada', fontsize=12)
@@ -338,74 +303,62 @@ def plot_cdf_comparison(data, results, n):
 
 
 
-def get_top_fitted_distributions(data, results, n):
+def get_top_fitted_distributions(data, results, n, distributions=None):
     """
-    Extrai os parâmetros das 'n' melhores distribuições ajustadas aos dados e retorna um DataFrame.
+    Extrai os parâmetros das distribuições ajustadas aos dados e retorna um DataFrame.
 
     Parâmetros:
         data (array-like): Conjunto de dados numéricos.
         results (dict): Dicionário contendo distribuições ajustadas.
-        n (int): Número de distribuições mais ajustadas a serem retornadas.
+            Esperado: {CommonDistributions: (SSE, arg, loc, scale)}
+        n (int): Número de distribuições mais ajustadas a serem retornadas (ignorado se `distributions` for fornecido).
+        distributions (list of CommonDistributions, optional): Lista de distribuições específicas a incluir.
 
     Retorna:
-        pd.DataFrame: Um DataFrame com as distribuições, seus erros (SSE) e parâmetros ajustados.
+        pd.DataFrame: Um DataFrame com os nomes das distribuições, seus SSEs e parâmetros ajustados.
     """
-    # Validação dos parâmetros
+    
+    # Validação dos dados
     if not isinstance(data, (list, np.ndarray)):
         raise TypeError("O parâmetro 'data' deve ser uma lista ou um array NumPy.")
     if len(data) < 2:
         raise ValueError("O conjunto de dados 'data' deve ter pelo menos dois elementos.")
     if not isinstance(results, dict):
         raise TypeError("O parâmetro 'results' deve ser um dicionário.")
-    if not all(isinstance(k, st.rv_continuous) for k in results.keys()):
-        raise TypeError("As chaves do dicionário 'results' devem ser distribuições contínuas do SciPy.")
-    if not isinstance(n, int) or n <= 0:
-        raise ValueError("O parâmetro 'n' deve ser um número inteiro positivo.")
-    if n > len(results):
-        raise ValueError(f"O número de distribuições solicitadas ({n}) excede o número disponível ({len(results)}).")
+    if not all(isinstance(k, CommonDistributions) for k in results.keys()):
+        raise TypeError("As chaves do dicionário 'results' devem ser instâncias de CommonDistributions.")
 
-    # Ordena os resultados pelo erro SSE (menor erro primeiro)
-    sorted_results = {k: results[k] for k in sorted(results, key=lambda x: results[x][0])}
+    if distributions is not None:
+        if not all(isinstance(d, CommonDistributions) for d in distributions):
+            raise TypeError("O parâmetro 'distributions' deve ser uma lista de CommonDistributions.")
+        selected_distributions = {d: results[d] for d in distributions if d in results}
+        if not selected_distributions:
+            raise ValueError("Nenhuma das distribuições fornecidas está presente nos resultados.")
+    else:
+        if not isinstance(n, int) or n <= 0:
+            raise ValueError("O parâmetro 'n' deve ser um número inteiro positivo.")
+        if n > len(results):
+            raise ValueError(f"O número de distribuições solicitadas ({n}) excede o número disponível ({len(results)}).")
+        sorted_results = dict(sorted(results.items(), key=lambda item: item[1][0]))  # ordena pelo SSE
+        selected_distributions = dict(list(sorted_results.items())[:n])
 
-    # Seleciona as 'n' melhores distribuições
-    top_distributions = dict(list(sorted_results.items())[:n])
-
-     # Mapeamento de distribuições para nomes legíveis
-    dist_names = {
-        dist: dist.name.capitalize() for dist in get_common_distributions()
-    }
-
-    # Lista para armazenar os resultados
+    # Construção do DataFrame
     result_rows = []
-
-    # Itera sobre as distribuições mais ajustadas
-    for distribution, result in top_distributions.items():
-        # Nome legível da distribuição
-        dist_name = dist_names.get(distribution, distribution.name)
-
-        # Extrai os parâmetros
-        sse, arg, loc, scale = result
-
-        # Se 'arg' não for vazio, pega o primeiro valor; caso contrário, define como NaN
+    for dist_enum, (sse, arg, loc, scale) in selected_distributions.items():
         c = arg[0] if len(arg) > 0 else float('nan')
-
-        # Adiciona os resultados à lista
         result_rows.append({
-            'distribution': dist_name,
+            'distribution': dist_enum.name.capitalize(),
             'sse': sse,
             'c': c,
             'loc': loc,
             'scale': scale
         })
 
-    # Cria o DataFrame com os resultados
-    df_result = pd.DataFrame(result_rows)
-
-    return df_result
+    return pd.DataFrame(result_rows)
 
 
 
-def get_distribution(name_file, n_distributions=3, duration=None, disag_factor=None, directory='../results'):
+def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory='../results', distributions=None):
     """
     Função principal para carregar, analisar e ajustar distribuições a dados de precipitação (diários ou subdiários).
 
@@ -422,61 +375,62 @@ def get_distribution(name_file, n_distributions=3, duration=None, disag_factor=N
         disag_factor (float, optional): Fator de desagregação para nomear arquivos subdiários (ex.: '_p0.2', '_m0.3'). 
                                        Ignorado se `duration` for None.
         directory (str): Diretório onde os arquivos estão localizados. Padrão é 'results'.
-        n_distributions (int): Número de distribuições mais ajustadas a serem analisadas e exibidas. Padrão é 3.
+        n (int): Número de distribuições mais ajustadas a serem analisadas e exibidas. Padrão é 3.
+        distributions (list of CommonDistributions, optional): Lista de distribuições específicas a serem utilizadas. 
+                                                               Se fornecida, ignora `n_distributions`.
 
     Retorna:
         None: Salva os resultados em um arquivo CSV e exibe mensagens de conclusão.
     """
-    # Validação do parâmetro n_distributions
-    if not isinstance(n_distributions, int) or n_distributions <= 0:
-        raise ValueError("O parâmetro 'n_distributions' deve ser um número inteiro positivo.")
+    if distributions is None:
+        if not isinstance(n, int) or n <= 0:
+            raise ValueError("O parâmetro 'n' deve ser um número inteiro positivo.")
 
     # Constrói o caminho do arquivo de entrada
     if duration is None:
         file_path = f'{directory}/max_daily_{name_file}.csv'
-        column_name = 'Precipitation'  # Coluna esperada para dados diários
+        column_name = 'Precipitation'
     else:
         if disag_factor is None:
             raise ValueError("O parâmetro 'disag_factor' deve ser fornecido quando 'duration' é especificado.")
         file_path = f'{directory}/max_subdaily_{name_file}{disag_factor}.csv'
-        column_name = duration  # Coluna esperada para dados subdiários
+        column_name = duration
 
-    # Tentativa de leitura do arquivo de dados
+    # Tentativa de leitura
     try:
         data_df_original = pd.read_csv(file_path)
     except FileNotFoundError:
         print(f"Erro: O arquivo '{file_path}' não foi encontrado.")
         return
 
-    # Verifica se a coluna esperada existe no DataFrame
     if column_name not in data_df_original.columns:
         print(f"Erro: A coluna '{column_name}' não foi encontrada no arquivo.")
         return
 
-    # Filtra a coluna de precipitação e calcula a média
+    # Dados
     data_df = data_df_original[[column_name]]
-    data = data_df.values.ravel()  # Converte os dados para um array numpy
+    data = data_df.values.ravel()
 
-    # Ajuste de distribuições aos dados (usa distribuições comuns pré-definidas)
-    results = fit_data(data)
+    # Ajuste das distribuições
+    results = fit_data(data,distributions=distributions)
 
-    # Geração de gráficos
-    plot_histogram(data, results, n_distributions)  # Plota o histograma e as distribuições ajustadas
-    plot_cdf_comparison(data, results, n_distributions)  # Realiza o teste de bondade de ajuste
+    # Gráficos
+    plot_histogram(data, results, n=n, distributions=distributions)
+    plot_cdf_comparison(data, results, n=n, distributions=distributions)
 
-    # Obtém os parâmetros das distribuições ajustadas e cria um DataFrame
-    df_parameters = get_top_fitted_distributions(data, results, n_distributions)
+    # Tabela de parâmetros
+    df_parameters = get_top_fitted_distributions(data, results, n=n, distributions=distributions)
 
-    # Salva os parâmetros em um arquivo CSV
+    # Salvamento
     output_file = f'{directory}/{name_file}_dist_params.csv'
     df_parameters.to_csv(output_file, index=False)
 
-    print(f"Processamento concluído. Parâmetros das {n_distributions} melhores distribuições salvos em '{output_file}'.")
+    print(f"Processamento concluído. Parâmetros salvos em '{output_file}'.")
 
 
 if __name__ == "__main__":
         
-    get_distribution('inmet_conv')
+    get_distribution(name_file='inmet_santana',directory='results/inmet_santana',distributions=[CommonDistributions.NORMAL,CommonDistributions.GEV,CommonDistributions.GUMBEL_R])
     #get_distribution(name_file='inmet',duration='Max_6h',disag_factor='_p0.2')
     
     
