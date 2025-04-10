@@ -3,13 +3,66 @@ from utils.get_datasets import process_data, DataSource
 from utils.data_processing import aggregate_to_csv, read_csv, distribution_plot_df
 from utils.error_correction import verification, fill_missing_data
 from utils.extreme_precipitation_analysis import calculate_p90, max_annual_precipitation
-from utils.extreme_precipitation_visualization import plot_subdaily_maximum
+from utils.extreme_precipitation_visualization import plot_subdaily_maximum, plot_comparative_absolute
 from utils.intervals_manipulation import get_subdaily_from_disagregation_factors, DisaggregationScenario
-from utils.get_distribution import get_distribution
+from utils.get_distribution import get_distribution,CommonDistributions
 from utils.idf_generator import *
 
 
+'''
+cemaden_santana = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='AC Santana', show_station_counts=True)
+aggregate_to_csv(df=cemaden_santana, name='cemaden_santana', directory='results/cemaden_santana')
 
+# Leitura dos dados agregados
+cemaden_santana_daily = read_csv(path='results/cemaden_santana/cemaden_santana_daily.csv')
+
+# Verificação de dias faltantes
+verification(cemaden_santana_daily)
+
+cemaden_santana_daily = fill_missing_data(
+    path_main='results/cemaden_santana/cemaden_santana_daily.csv',
+    path_secondary='results/inmet_santana/inmet_santana_daily.csv',
+    overwrite=True
+)
+
+
+c_santana_daily = read_csv(path='results/cemaden_santana/cemaden_santana_daily.csv')
+
+max_c_santana = max_annual_precipitation(df=c_santana_daily, name_file='cemaden_santana', output_dir='results/cemaden_santana')
+
+# Desagregação subdiária para diferentes cenários
+for scenario in [DisaggregationScenario.BASE, DisaggregationScenario.UMIDO, DisaggregationScenario.SECO]:
+    get_subdaily_from_disagregation_factors(
+        df=max_c_santana,
+        scenario=scenario,
+        var_value=0.2,
+        name_file='cemaden_santana',
+        directory='results/cemaden_santana'
+    )
+'''
+
+plot_comparative_absolute(entries=[{"name_file": "inmet_santana", "directory": "results/inmet_santana"},
+    {"name_file": "cemaden_santana", "directory": "results/cemaden_santana"}],var_value=0.2,intervalos=['Max_24h', 'Max_1h'], output_directory='results/graphs/comparative_graphs')
+
+'''
+cemaden_interlagos = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='Interlagos', show_station_counts=True)
+aggregate_to_csv(df=cemaden_interlagos, name='cemaden_interlagos', directory='results/cemaden_interlagos')
+
+# Leitura dos dados agregados
+cemaden_interlagos_daily = read_csv(path='results/cemaden_interlagos/cemaden_interlagos_daily.csv')
+
+# Verificação de dias faltantes
+verification(cemaden_interlagos_daily)
+
+cemaden_interlagos_daily = fill_missing_data(
+    path_main='results/cemaden_interlagos/cemaden_interlagos_daily.csv',
+    path_secondary='results/inmet_interlagos/inmet_interlagos_daily.csv',
+    overwrite=True
+)
+
+verification(cemaden_interlagos_daily)
+'''
+'''
 # Processamento dos dados do CEMADEN
 cemaden_pirajussara = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='Pirajussara', show_station_counts=True)
 aggregate_to_csv(df=cemaden_pirajussara, name='cemaden_pirajussara', directory='results/cemaden_pirajussara')
@@ -19,7 +72,7 @@ cemaden_pirajussara_daily = read_csv(path='results/cemaden_pirajussara/cemaden_p
 
 # Verificação de dias faltantes
 verification(cemaden_pirajussara_daily)
-
+'''
 
 '''
 # Processamento dos dados diários do INMET
@@ -62,8 +115,9 @@ plot_subdaily_maximum(name_file='inmet_santana', directory='results/inmet_santan
 get_distribution(name_file='inmet_santana', directory='results/inmet_santana')
 get_distribution(name_file='inmet_santana', directory='results/inmet_santana', disag_factor='_p0.2', duration='Max_24h')
 
+
 # Geração e plotagem das curvas IDF finais
-get_final_idf_params(
+get_final_idf(
     name_file='inmet_santana',
     directory='results/inmet_santana',
     disag_factor='p0.2',
@@ -73,6 +127,8 @@ get_final_idf_params(
     return_periods=[2, 5, 10, 25, 50, 100, 200, 500, 1000],
     save_plot=True,
     plot_directory='results/inmet_santana/graphs/idf',
+    generate_tables=True
 )
 
 '''
+

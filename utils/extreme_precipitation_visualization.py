@@ -11,6 +11,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 
+from collections import Counter
+
 
 
 def plot_subdaily_maximum(name_file, directory='Results', var_value=0.2, relative=False):
@@ -111,6 +113,103 @@ def plot_subdaily_maximum(name_file, directory='Results', var_value=0.2, relativ
             print(f'Gráfico absoluto salvo: {name_file}_{intervalo}_absolute.png')
 
     print('\n✅ Finalizado!\n')
+    
+    
+
+def plot_comparative_absolute(entries, var_value=0.2, intervalos=None, output_directory='graphs/absolute_comparative'):
+    """
+    Gera gráficos absolutos comparativos de precipitação subdiária entre múltiplos conjuntos de arquivos.
+
+    Parâmetros:
+    - entries (list[dict]): Lista com dicionários contendo:
+        - 'name_file' (str): Nome base do arquivo.
+        - 'directory' (str): Caminho da pasta onde estão os arquivos.
+    - var_value (float): Variação percentual da CETESB.
+    - intervalos (list[str], opcional): Lista dos intervalos a serem plotados. Usa padrão se None.
+    - output_directory (str): Pasta onde os gráficos serão salvos.
+
+    Retorno:
+    Nenhum. Gráficos são salvos na pasta especificada.
+    """
+    import os
+    import pandas as pd
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    if intervalos is None:
+        intervalos = ['Max_1h', 'Max_6h', 'Max_8h', 'Max_10h', 'Max_12h', 'Max_24h']
+
+    print("\nIniciando geração de gráficos absolutos comparativos...\n")
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory, exist_ok=True)
+
+    tipos_base = {
+        'Observado': 'max_subdaily_{}.csv',
+        'CETESB': 'max_subdaily_{}_ger.csv',
+        f'CETESB -{int(var_value * 100)}%': 'max_subdaily_{}_m{}.csv',
+        f'CETESB +{int(var_value * 100)}%': 'max_subdaily_{}_p{}.csv',
+    }
+
+    for tipo, file_template in tipos_base.items():
+        dataframes = []
+        for entry in entries:
+            name_file = entry['name_file']
+            directory = entry['directory']
+            label = entry.get('name_file', name_file)
+
+            if '{}' in file_template:
+                path = os.path.join(directory, file_template.format(name_file, var_value))
+            else:
+                path = os.path.join(directory, file_template.format(name_file))
+
+            if os.path.exists(path):
+                df = pd.read_csv(path)
+                df['Origem'] = label
+                df['Tipo'] = tipo
+                dataframes.append(df)
+            else:
+                print(f'Arquivo não encontrado: {path} (Ignorando para {tipo})')
+
+        if len(dataframes) < 2:
+            print(f'Dados insuficientes para o tipo "{tipo}". Pulando...\n')
+            continue
+
+        common_years = set(dataframes[0]['Year'])
+        for df in dataframes[1:]:
+            common_years &= set(df['Year'])
+
+        if not common_years:
+            print(f'Nenhum ano em comum para "{tipo}". Pulando...\n')
+            continue
+
+        for i in range(len(dataframes)):
+            dataframes[i] = dataframes[i][dataframes[i]['Year'].isin(common_years)]
+
+        df_final = pd.concat(dataframes, ignore_index=True, sort=False)
+
+        for intervalo in intervalos:
+            if intervalo not in df_final.columns:
+                continue
+
+            altura = 5
+            largura = max(1.5, min(3.5, len(common_years) * 0.3))
+
+            g = sns.catplot(
+                x="Year", y=intervalo, hue="Origem", data=df_final,
+                kind='bar', height=altura, aspect=largura
+            )
+            g.set_axis_labels('', 'Precipitação (mm)')
+            g.fig.subplots_adjust(bottom=0.15, top=0.9, left=0.07)
+            plt.xticks(rotation=50)
+            plt.ylim(0, 170)
+            plt.title(f'Comparativo {tipo} - Máximo {intervalo.replace("Max_", "")}')
+            save_path = os.path.join(output_directory, f'comparativo_{tipo}_{intervalo}.png')
+            plt.savefig(save_path)
+            plt.close()
+            print(f'Gráfico comparativo salvo: {save_path}')
+
+    print('\n✅ Geração de gráficos comparativos finalizada!\n')
+
 
 
 

@@ -427,11 +427,6 @@ def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory
 
     print(f"Processamento concluído. Parâmetros salvos em '{output_file}'.")
 
-
-if __name__ == "__main__":
-        
-    get_distribution(name_file='inmet_santana',directory='results/inmet_santana',distributions=[CommonDistributions.NORMAL,CommonDistributions.GEV,CommonDistributions.GUMBEL_R])
-    #get_distribution(name_file='inmet',duration='Max_6h',disag_factor='_p0.2')
     
     
     
