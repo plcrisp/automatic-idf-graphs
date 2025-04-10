@@ -6,8 +6,15 @@ Utiliza a biblioteca Pandas para manipulação de dados e uma biblioteca auxilia
 """
 
 import pandas as pd
+import re
+import os
+
 from datetime import date
-from .data_processing import read_csv
+from sklearn.ensemble import RandomForestRegressor
+
+
+from .data_processing import read_csv, aggregate_to_csv
+
 
 def verification(df):
     """
@@ -99,36 +106,105 @@ def set_date(df):
 
 
 
-def fill_missing_data(path):
+def fill_missing_data(path_main, path_secondary=None, overwrite=False):
     """
-    Preenche os valores faltantes na coluna 'Precipitation' de um DataFrame
-    utilizando interpolação sazonal (baseada em grupos mensais).
+    Preenche os valores faltantes na coluna 'Precipitation' de um DataFrame.
+
+    Se um segundo caminho for fornecido, tenta completar os dados faltantes
+    com base em um modelo de Random Forest treinado com o segundo DataFrame.
+    Caso contrário, aplica interpolação sazonal por mês.
+
+    Se overwrite=True, substitui o arquivo original (path_main) com o novo DataFrame.
 
     Parâmetros:
     ----------
-    name : str
-        Nome do arquivo ou base de dados a ser carregado.
-    var : str
-        Tipo de dados ou variável a ser processada (ex.: 'daily').
+    path_main : str
+        Caminho para o CSV principal com possíveis valores faltantes.
+    path_secondary : str, opcional
+        Caminho para um segundo CSV com dados completos ou com menos faltas.
+    overwrite : bool, opcional (padrão: False)
+        Se True, sobrescreve o arquivo path_main com os dados preenchidos.
 
     Retorna:
     -------
-    df : pandas.DataFrame
-        DataFrame com os valores interpolados na coluna 'Precipitation'.
-        Os índices do DataFrame permanecem alinhados com os valores originais.
+    df_main : pandas.DataFrame
+        DataFrame com a coluna 'Precipitation' preenchida.
     """
-    df = set_date(read_csv(path))
-    
-    # Realiza a interpolação sazonal (por mês)
-    interpolated = (
-        df.groupby('Month')['Precipitation']
-        .apply(lambda group: group.interpolate(method='linear'))
-    )
+    df_main = set_date(read_csv(path_main))
 
-    # Realinha os índices do resultado interpolado com o DataFrame original
-    df['Precipitation'] = interpolated.reset_index(level=0, drop=True)
+    if path_secondary:
+        df_secondary = set_date(read_csv(path_secondary))
 
-    return df
+        for df in (df_main, df_secondary):
+            if not {'Year', 'Month', 'Day', 'Precipitation'}.issubset(df.columns):
+                raise ValueError("Os DataFrames devem conter as colunas: Year, Month, Day, Precipitation")
+
+        df_main['Key'] = df_main[['Year', 'Month', 'Day']].astype(str).agg('-'.join, axis=1)
+        df_secondary['Key'] = df_secondary[['Year', 'Month', 'Day']].astype(str).agg('-'.join, axis=1)
+
+        merged = df_main[['Key', 'Precipitation']].merge(
+            df_secondary[['Key', 'Precipitation']],
+            on='Key',
+            how='left',
+            suffixes=('_main', '_sec')
+        )
+
+        valid = merged.dropna(subset=['Precipitation_main', 'Precipitation_sec'])
+
+        if len(valid) >= 10:  # Apenas treina se tiver dados suficientes
+            valid = valid.copy()
+            valid['Year'] = pd.to_datetime(valid['Key']).dt.year
+            valid['Month'] = pd.to_datetime(valid['Key']).dt.month
+            valid['Day'] = pd.to_datetime(valid['Key']).dt.day
+
+            X_train = valid[['Precipitation_sec', 'Year', 'Month', 'Day']]
+            y_train = valid['Precipitation_main']
+
+            model = RandomForestRegressor(n_estimators=100, random_state=42)
+            model.fit(X_train, y_train)
+
+            # Prepara os dados ausentes para previsão
+            to_predict = merged[merged['Precipitation_main'].isna() & merged['Precipitation_sec'].notna()].copy()
+            to_predict['Year'] = pd.to_datetime(to_predict['Key']).dt.year
+            to_predict['Month'] = pd.to_datetime(to_predict['Key']).dt.month
+            to_predict['Day'] = pd.to_datetime(to_predict['Key']).dt.day
+
+            X_pred = to_predict[['Precipitation_sec', 'Year', 'Month', 'Day']]
+            merged.loc[to_predict.index, 'Precipitation_main'] = model.predict(X_pred)
+
+        else:
+            print("Poucos dados para treinar Random Forest. Usando interpolação sazonal.")
+            interpolated = (
+                df_main.groupby('Month')['Precipitation']
+                .apply(lambda group: group.interpolate(method='linear'))
+            )
+            df_main['Precipitation'] = interpolated.reset_index(level=0, drop=True)
+            return df_main
+
+        # Atualiza os valores de precipitação no df_main
+        df_main.set_index('Key', inplace=True)
+        merged.set_index('Key', inplace=True)
+        df_main['Precipitation'] = merged['Precipitation_main']
+        df_main.reset_index(drop=True, inplace=True)
+
+    else:
+        interpolated = (
+            df_main.groupby('Month')['Precipitation']
+            .apply(lambda group: group.interpolate(method='linear'))
+        )
+        df_main['Precipitation'] = interpolated.reset_index(level=0, drop=True)
+
+    if overwrite:
+        df_main.to_csv(path_main, index=False)
+
+        filename = os.path.basename(path_main)
+        directory = os.path.dirname(path_main)
+        name = os.path.splitext(filename)[0]
+        name = re.sub(r'_(daily|yearly|monthly|hourly)$', '', name)
+
+        aggregate_to_csv(df=df_main, name=name, directory=directory)
+
+    return df_main
 
 
 
