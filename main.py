@@ -8,11 +8,13 @@ from utils.intervals_manipulation import get_subdaily_from_disagregation_factors
 from utils.get_distribution import get_distribution,CommonDistributions
 from utils.idf_generator import *
 
+from typing import Optional, List
 
-'''
-cemaden_santana = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='AC Santana', show_station_counts=True)
+
+cemaden_santana = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='AC Santana', show_station_counts=True, generate_map=True)
 aggregate_to_csv(df=cemaden_santana, name='cemaden_santana', directory='results/cemaden_santana')
 
+'''
 # Leitura dos dados agregados
 cemaden_santana_daily = read_csv(path='results/cemaden_santana/cemaden_santana_daily.csv')
 
@@ -25,63 +27,13 @@ cemaden_santana_daily = fill_missing_data(
     overwrite=True
 )
 
+verification(cemaden_santana_daily)
 
-c_santana_daily = read_csv(path='results/cemaden_santana/cemaden_santana_daily.csv')
-
-max_c_santana = max_annual_precipitation(df=c_santana_daily, name_file='cemaden_santana', output_dir='results/cemaden_santana')
-
-# Desagregação subdiária para diferentes cenários
-for scenario in [DisaggregationScenario.BASE, DisaggregationScenario.UMIDO, DisaggregationScenario.SECO]:
-    get_subdaily_from_disagregation_factors(
-        df=max_c_santana,
-        scenario=scenario,
-        var_value=0.2,
-        name_file='cemaden_santana',
-        directory='results/cemaden_santana'
-    )
-'''
-
-plot_comparative_absolute(entries=[{"name_file": "inmet_santana", "directory": "results/inmet_santana"},
-    {"name_file": "cemaden_santana", "directory": "results/cemaden_santana"}],var_value=0.2,intervalos=['Max_24h', 'Max_1h'], output_directory='results/graphs/comparative_graphs')
-
-'''
-cemaden_interlagos = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='Interlagos', show_station_counts=True)
-aggregate_to_csv(df=cemaden_interlagos, name='cemaden_interlagos', directory='results/cemaden_interlagos')
-
-# Leitura dos dados agregados
-cemaden_interlagos_daily = read_csv(path='results/cemaden_interlagos/cemaden_interlagos_daily.csv')
-
-# Verificação de dias faltantes
-verification(cemaden_interlagos_daily)
-
-cemaden_interlagos_daily = fill_missing_data(
-    path_main='results/cemaden_interlagos/cemaden_interlagos_daily.csv',
-    path_secondary='results/inmet_interlagos/inmet_interlagos_daily.csv',
-    overwrite=True
-)
-
-verification(cemaden_interlagos_daily)
-'''
-'''
-# Processamento dos dados do CEMADEN
-cemaden_pirajussara = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='Pirajussara', show_station_counts=True)
-aggregate_to_csv(df=cemaden_pirajussara, name='cemaden_pirajussara', directory='results/cemaden_pirajussara')
-
-# Leitura dos dados agregados
-cemaden_pirajussara_daily = read_csv(path='results/cemaden_pirajussara/cemaden_pirajussara_daily.csv')
-
-# Verificação de dias faltantes
-verification(cemaden_pirajussara_daily)
-'''
-
-'''
 # Processamento dos dados diários do INMET
 inmet_santana = process_data(source=DataSource.INMET_DAILY, data_path='./datasets/INMET_santana/santana-1961-2025.csv')
 aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inmet_santana')
 
 # Leitura dos dados agregados
-i_santana_yearly = read_csv(path='results/inmet_santana/inmet_santana_yearly.csv')
-i_santana_monthly = read_csv(path='results/inmet_santana/inmet_santana_monthly.csv')
 i_santana_daily = read_csv(path='results/inmet_santana/inmet_santana_daily.csv')
 
 # Visualização da distribuição das chuvas
@@ -130,5 +82,76 @@ get_final_idf(
     generate_tables=True
 )
 
-'''
 
+
+
+def complete_precipitation_analysis(
+    name_file: str,
+    data_path: Optional[str] = None,
+    source: DataSource = DataSource.INMET_DAILY,
+    var_value: float = 0.2,
+    durations: Optional[List[int]] = None,
+    return_periods: Optional[List[int]] = None,
+    base_dir: str = 'results'
+):
+    if durations is None:
+        durations = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+    if return_periods is None:
+        return_periods = [2, 5, 10, 25, 50, 100, 200, 500, 1000]
+    if data_path is None:
+        data_path = f'./datasets/{name_file}/{name_file}-1961-2025.csv'
+    
+    directory = f'{base_dir}/{name_file}'
+
+    # Processamento dos dados
+    df = process_data(source=source, data_path=data_path)
+    aggregate_to_csv(df=df, name=name_file, directory=directory)
+
+    # Leitura e visualização
+    daily_df = read_csv(path=f'{directory}/{name_file}_daily.csv')
+    distribution_plot_df(daily_df, show_max=True)
+
+    # Preenchimento e verificação de dados faltantes
+    daily_df = fill_missing_data(path=f'{directory}/{name_file}_daily.csv')
+    verification(daily_df)
+
+    # Cálculo do percentil 90 e máxima anual
+    calculate_p90(daily_df)
+    max_df = max_annual_precipitation(df=daily_df, name_file=name_file, output_dir=directory)
+
+    # Desagregação para todos os cenários
+    for scenario in [DisaggregationScenario.BASE, DisaggregationScenario.UMIDO, DisaggregationScenario.SECO]:
+        get_subdaily_from_disagregation_factors(
+            df=max_df,
+            scenario=scenario,
+            var_value=var_value,
+            name_file=name_file,
+            directory=directory
+        )
+
+    # Plotagens dos máximos
+    plot_subdaily_maximum(name_file=name_file, directory=directory, var_value=var_value)
+    plot_subdaily_maximum(name_file=name_file, directory=directory, var_value=var_value, relative=True)
+
+    # Ajuste e visualização de distribuições
+    get_distribution(name_file=name_file, directory=directory)
+    get_distribution(name_file=name_file, directory=directory, disag_factor=f'_p{var_value}', duration='Max_24h')
+
+    # Geração da curva IDF final
+    get_final_idf(
+        name_file=name_file,
+        directory=directory,
+        disag_factor=f'p{var_value}',
+        save_file=True,
+        plot=True,
+        durations=durations,
+        return_periods=return_periods,
+        save_plot=True,
+        plot_directory=f'{directory}/graphs/idf',
+        generate_tables=True
+    )
+ 
+    
+plot_comparative_absolute(entries=[{"name_file": "inmet_santana", "directory": "results/inmet_santana"},
+    {"name_file": "cemaden_santana", "directory": "results/cemaden_santana"}],var_value=0.2,intervalos=['Max_24h', 'Max_1h'], output_directory='results/graphs/comparative_graphs')
+'''

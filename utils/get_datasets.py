@@ -8,6 +8,11 @@ A manipulação dos dados é feita com pandas, e a gestão dos arquivos utiliza 
 import pandas as pd
 from enum import Enum
 from pathlib import Path
+from collections import Counter
+import folium
+import os
+import webbrowser
+
 
 
 class DataSource(Enum):
@@ -42,10 +47,68 @@ def print_station_record_counts(df: pd.DataFrame, site_column: str = 'Site'):
     for site, count in df[site_column].value_counts().items():
         print(f"- {site}: {count} registros")
         
+        
+        
+def generate_cemaden_map(data_path, cemaden_df):
+    print("Gerando mapa com as estações do CEMADEN...")
+
+    cemaden_files = Path(data_path).glob('*.csv')
+    all_rows = pd.concat(
+        [pd.read_csv(file, sep=';') for file in cemaden_files],
+        ignore_index=True,
+        sort=False
+    )
+
+    all_rows['latitude'] = all_rows['latitude'].str.replace(',', '.', regex=False).astype(float)
+    all_rows['longitude'] = all_rows['longitude'].str.replace(',', '.', regex=False).astype(float)
+
+    counts = Counter(cemaden_df['Site'])
+    unique_sites = all_rows[['nomeEstacao', 'latitude', 'longitude']].drop_duplicates()
+
+    map_center = [unique_sites['latitude'].mean(), unique_sites['longitude'].mean()]
+    folium_map = folium.Map(location=map_center, zoom_start=11)
+
+    # Normalização
+    max_count = max(counts.values()) if counts else 1
+    min_count = min(counts.values()) if counts else 0
+
+    # Mapear faixas de intensidade para cores nomeadas suportadas pelo folium
+    def get_icon_color(intensity):
+        if intensity > 0.8:
+            return 'darkgreen'
+        elif intensity > 0.6:
+            return 'green'
+        elif intensity > 0.4:
+            return 'lightgreen'
+        elif intensity > 0.2:
+            return 'beige'
+        else:
+            return 'white'
+
+    for _, row in unique_sites.iterrows():
+        name = row['nomeEstacao']
+        lat = row['latitude']
+        lon = row['longitude']
+        count = counts.get(name, 0)
+        intensity = (count - min_count) / (max_count - min_count + 1e-9)
+        icon_color = get_icon_color(intensity)
+
+        popup_text = f"{name}<br>Registros: {count}"
+        folium.Marker(
+            location=[lat, lon],
+            popup=popup_text,
+            icon=folium.Icon(color=icon_color, icon=' ')
+        ).add_to(folium_map)
+
+    os.makedirs('./resultado/maps', exist_ok=True)
+    map_path = './resultado/maps/mapa_estacoes.html'
+    folium_map.save(map_path)
+    print(f"Mapa salvo em {map_path}")
+    webbrowser.open('file://' + os.path.realpath(map_path))
+        
 
 
-
-def process_data(source: DataSource, data_path: str, site_filter: str = None, show_station_counts: bool = False):
+def process_data(source: DataSource, data_path: str, site_filter: str = None, show_station_counts: bool = False, generate_map: bool = False):
     """
     Processa dados meteorológicos de diferentes fontes.
 
@@ -110,6 +173,9 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None, sh
         
         if show_station_counts:
             print_station_record_counts(CEMADEN_df)
+            
+        if generate_map:
+            generate_cemaden_map(data_path, CEMADEN_df)
 
         # Filtra a estação desejada
         station_df = CEMADEN_df[CEMADEN_df['Site'] == site_filter]
