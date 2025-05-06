@@ -2,6 +2,7 @@
 from utils.get_datasets import process_data, DataSource
 from utils.data_processing import aggregate_to_csv, read_csv, distribution_plot_df
 from utils.error_correction import verification, fill_missing_data
+from utils.quality_analysis import process_precipitation_series
 from utils.extreme_precipitation_analysis import calculate_p90, max_annual_precipitation
 from utils.extreme_precipitation_visualization import plot_subdaily_maximum, plot_comparative_absolute
 from utils.intervals_manipulation import get_subdaily_from_disagregation_factors, DisaggregationScenario
@@ -10,9 +11,15 @@ from utils.idf_generator import *
 
 from typing import Optional, List
 
-
+'''
 cemaden_santana = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='AC Santana', show_station_counts=True, generate_map=True)
 aggregate_to_csv(df=cemaden_santana, name='cemaden_santana', directory='results/cemaden_santana')
+
+inmet_santana = process_data(source=DataSource.INMET_DAILY, data_path='./datasets/INMET_santana/sp-1961-2025.csv')
+aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inmet_santana')
+'''
+
+process_precipitation_series(file_names=['results/cemaden_santana/cemaden_santana_daily.csv','results/inmet_santana/inmet_santana_daily.csv'])
 
 '''
 # Leitura dos dados agregados

@@ -100,8 +100,8 @@ def generate_cemaden_map(data_path, cemaden_df):
             icon=folium.Icon(color=icon_color, icon=' ')
         ).add_to(folium_map)
 
-    os.makedirs('./resultado/maps', exist_ok=True)
-    map_path = './resultado/maps/mapa_estacoes.html'
+    os.makedirs('./results/maps', exist_ok=True)
+    map_path = './results/maps/mapa_estacoes_cemaden.html'
     folium_map.save(map_path)
     print(f"Mapa salvo em {map_path}")
     webbrowser.open('file://' + os.path.realpath(map_path))

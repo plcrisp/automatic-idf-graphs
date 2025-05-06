@@ -24,8 +24,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pymannkendall as mk
 
-from error_correction import verification, fill_missing_data
-from data_processing import read_csv
+from .error_correction import verification, fill_missing_data
+from .data_processing import read_csv
 
 
 """
@@ -279,65 +279,86 @@ def get_trend(var, sites_list, alpha_value, group, data_type='obs', plot_graphs=
 
 
 
-def process_precipitation_series(file_names, frequency):
+def process_precipitation_series(file_names):
     """
-    Processa séries temporais de precipitação, realiza leitura, preenchimento de gaps,
-    união, cálculo de médias acumuladas e cria gráficos de dupla massa.
+    Processa séries temporais de precipitação, realizando:
 
-    Args:
+    1. Leitura e verificação da integridade das séries (presença de dias faltantes).
+    2. Preenchimento de lacunas (gaps) com base na seguinte lógica:
+       - Se ao menos um dataset estiver completo, ele será usado como referência 
+         para preencher os datasets incompletos.
+       - Se todos estiverem incompletos, cada um será preenchido individualmente.
+    3. União das séries em um único DataFrame, com cálculo da precipitação média diária.
+    4. Cálculo das somas acumuladas (precipitação acumulada) para cada estação e para a média.
+    5. Geração de gráficos de dupla massa (dispersão entre acumulado individual e acumulado médio).
+
+    Parâmetros:
         file_names (list): Lista com os nomes dos arquivos (sem extensão).
-        frequency (str): Frequência das séries ('daily', 'monthly', etc.).
-        output_csv (str): Caminho do arquivo de saída CSV para salvar os dados processados.
 
-    Returns:
-        None
+    Retorno:
+        None. Exibe informações no console e gera gráficos com os dados processados.
     """
 
-    def load_and_verify(file_name, frequency):
-        """
-        Lê um arquivo CSV e realiza a verificação de gaps.
+    def load_and_verify(file_name):
+        print(f"[INFO] Lendo e verificando: {file_name}")
+        df = read_csv(file_name)
+        result = verification(df)
+        return df, result["status"]
 
-        Args:
-            file_name (str): Nome do arquivo sem extensão.
-            frequency (str): Frequência esperada ('daily', 'monthly', etc.).
+    # ETAPA 1: LEITURA E VERIFICAÇÃO DE GAPS
+    verification_results = {}
+    dataframes = {}
 
-        Returns:
-            pd.DataFrame: DataFrame com os dados carregados e verificados.
-        """
-        df = read_csv(file_name, frequency)  # Lê o arquivo usando a função específica definida no módulo
-        verification(df)  # Verifica gaps ou inconsistências na série
-        return df
+    for name in file_names:
+        df, status = load_and_verify(name)
+        dataframes[name] = df
+        verification_results[name] = status
 
-    # ----------------- ETAPA 1: LEITURA E VERIFICAÇÃO DE GAPS ----------------- #
-    dataframes = {name: load_and_verify(name, frequency) for name in file_names}
+    # ETAPA 2: PREENCHIMENTO DE GAPS
+    complete_paths = [name for name, status in verification_results.items() if status == 'complete']
+    incomplete_paths = [name for name, status in verification_results.items() if status == 'incomplete']
 
-    # ----------------- ETAPA 2: PREENCHIMENTO DE GAPS ----------------- #
-    dataframes = {name: fill_missing_data(name, frequency) for name in file_names}
+    if complete_paths:
+        reference = complete_paths[0]
+        print(f"[INFO] Usando '{reference}' como referência para preenchimento.")
+        for name in incomplete_paths:
+            print(f"[INFO] Preenchendo '{name}' com base em '{reference}'...")
+            dataframes[name] = fill_missing_data(path_main=name, path_secondary=reference, overwrite=False)
+    elif incomplete_paths:
+        print("[INFO] Nenhum dataset completo encontrado. Preenchendo todos individualmente...")
+        for name in incomplete_paths:
+            print(f"[INFO] Preenchendo '{name}' individualmente...")
+            dataframes[name] = fill_missing_data(path_main=name)
+    else:
+        print("\n[INFO] Todos os datasets estão completos. Nenhum preenchimento necessário.\n")
 
-    # ----------------- ETAPA 3: UNIÃO E PROCESSAMENTO ----------------- #
+    # ETAPA 3: UNIÃO E PROCESSAMENTO
+    print("[INFO] Unindo séries e calculando média diária...")
     df = left_join_precipitation(*dataframes.values())
     df.columns = ['Date'] + [f'P_{name}' for name in file_names]
 
-    df = df.dropna()  # Remove linhas com valores NaN (dados ausentes)
-    df['P_average'] = df.iloc[:, 1:].mean(axis=1)  # Calcula a média das colunas de precipitação para cada dia
+    df = df.dropna()
+    df['P_average'] = df.iloc[:, 1:].mean(axis=1)
 
-    for col in df.columns[1:]:  # Calcula as somas acumuladas para cada estação e para a média
+    for col in df.columns[1:]:
         df[f'Pacum_{col}'] = df[col].fillna(0).cumsum()
 
-    # ----------------- ETAPA 4: PLOTAGEM ----------------- #
-    sns.set_context("talk", font_scale=0.8)  # Define um estilo apropriado para apresentações
-    fig, axes = plt.subplots(1, len(file_names), figsize=(20, 6), sharey=True)  # Cria figura com subplots lado a lado
+    # ETAPA 4: PLOTAGEM
+    print("[INFO] Gerando gráficos de dupla massa...")
+    sns.set_context("talk", font_scale=0.8)
+    fig, axes = plt.subplots(1, len(file_names), figsize=(20, 6), sharey=True)
 
     for ax, name in zip(axes, file_names):
         sns.scatterplot(
-            x="Pacum_P_average",  # Eixo X: soma acumulada da precipitação média
-            y=f"Pacum_P_{name}",  # Eixo Y: soma acumulada da estação específica
-            data=df,  # DataFrame com os dados
-            ax=ax  # Define o subplot atual
+            x="Pacum_P_average",
+            y=f"Pacum_P_{name}",
+            data=df,
+            ax=ax
         )
-        ax.set_xlabel("Média Pacum (mm)")  # Define o rótulo do eixo X
-        ax.set_ylabel(f"Pacum {name} (mm)")  # Define o rótulo do eixo Y
-        ax.set_title(f"Dispersão de {name}")  # Define o título do subplot
+        ax.set_xlabel("Média Pacum (mm)")
+        ax.set_ylabel(f"Pacum {name} (mm)")
+        ax.set_title(f"Dispersão de {name}")
 
-    plt.tight_layout()  # Ajusta o layout para evitar sobreposição dos subplots
+    plt.tight_layout()
     plt.show()
+    print("[INFO] Processamento concluído.")
