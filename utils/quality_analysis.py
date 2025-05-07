@@ -123,7 +123,7 @@ def correlation_plots(*dfs):
 """
 
 
-def get_trend(var, sites_list, alpha_value, group, data_type='obs', plot_graphs=True):
+def get_trend(var, sites_list, group, alpha_value=0.05, data_type='obs', plot_graphs=True):
     """
     Realiza a análise de tendência em dados de precipitação usando diferentes variações do 
     teste de Mann-Kendall. Os resultados são armazenados em um CSV para cada grupo e tipo de dado,
