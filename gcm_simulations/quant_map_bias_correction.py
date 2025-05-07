@@ -1,44 +1,38 @@
 
 """
-Análise de Dados Climáticos Corretos por Viés - Baseline
+Este módulo implementa um método de **correção de viés climático** usando *Quantile Mapping* (Mapeamento de Quantis) 
+combinado com uma **regressão log-linear**, visando melhorar a adequação dos dados simulados por
+modelos climáticos regionais (RCMs ou GCMs) aos dados observacionais.
 
-Este script realiza uma análise climática baseada em modelos climáticos globais (GCMs) simulando o período de referência (baseline).
-Ele aplica diferentes métodos de correção de viés aos dados simulados e gera estatísticas importantes para estudos de mudança climática.
+## O que é correção de viés?
 
-📌 Objetivos principais:
-- Processar dados simulados de precipitação de modelos climáticos (baseline)
-- Corrigir os dados com diferentes métodos de correção de viés
-- Calcular estatísticas como:
-    - Percentil 90 (P90) diário
-    - Máxima precipitação diária anual
-    - Tendência temporal da precipitação
+Modelos climáticos, apesar de úteis para simular cenários futuros, muitas vezes apresentam 
+**viés sistemático**, ou seja, tendências consistentes de superestimar ou subestimar variáveis como 
+precipitação e temperatura. A **correção de viés (bias correction)** é um conjunto de técnicas 
+estatísticas utilizadas para ajustar esses dados simulados com base em registros históricos observados.
 
-🌍 Modelos Climáticos Utilizados:
-- **HADGEM**: Desenvolvido pelo Met Office Hadley Centre (Reino Unido)
-- **MIROC5**: Desenvolvido pela Universidade de Tóquio (Japão)
-Esses modelos fazem parte de experimentos climáticos globais, como o CMIP, e simulam o clima da Terra com base em equações físicas.
+## O que é Quantile Mapping?
 
-🕰️ Baseline:
-O baseline é o período de referência histórico (ex: 1980–2005) simulado pelos modelos climáticos. Ele é usado para validar os modelos contra dados observados e como base de comparação para avaliar mudanças futuras no clima.
+O *Quantile Mapping* é uma técnica amplamente usada na correção de viés que se baseia na comparação 
+entre as distribuições de probabilidade dos dados simulados e os dados observados. Ele consiste em:
 
-🛠️ Métodos de Correção de Viés Aplicados:
-- **MD** (*Mean Distribution*): Corrige a média e a distribuição dos dados.
-- **PT** (*Power Transformation*): Aplica transformações matemáticas para reduzir o viés.
-- **QM** (*Quantile Mapping*): Corrige os quantis da distribuição, muito usado.
-- **DBC** (*Double Bias Correction*): Dupla correção que ajusta média e variabilidade.
+1. **Ajustar distribuições teóricas** (ex: Lognormal, Gumbel, GEV) aos dados históricos observados e simulados.
+2. Para cada valor simulado, encontrar o seu **quantil correspondente** na distribuição acumulada.
+3. Mapear esse quantil para o valor equivalente na distribuição observacional, corrigindo assim o dado.
 
-⚙️ Operações realizadas:
-1. Leitura dos arquivos simulados corrigidos por viés (um por modelo e método).
-2. Cálculo do P90 para cada série temporal corrigida.
-3. Agregação por ano e exportação dos dados anuais.
-4. Cálculo da maior precipitação diária em cada ano.
-5. Análise de tendência da precipitação total anual e da precipitação máxima diária anual, com base em regressão.
+Esse processo permite que os dados simulados reflitam melhor a magnitude e a frequência das variáveis climáticas reais.
 
-📁 Estrutura de diretórios esperada:
-Os arquivos CSV devem estar organizados em:  
-`GCM_data/bias_correction/{modelo}_baseline_{método}_daily.csv`
+## Método adotado neste script
 
-Exemplo de nome de arquivo: `HADGEM_baseline_QM_daily.csv`
+Este módulo vai além do *Quantile Mapping* tradicional ao incluir:
+
+- Um **ajuste espacial** via mapeamento de quantis entre os dados históricos do modelo e os observacionais.
+- Uma **regressão log-linear** entre os dados simulados e os corrigidos, permitindo aplicar a mesma relação aos cenários futuros.
+- A possibilidade de visualizar graficamente a qualidade do ajuste com o coeficiente de determinação (R²).
+
+Essa abordagem é especialmente útil para preparar dados climáticos para modelagens hidrológicas, 
+estudos de impacto climático e análise de eventos extremos.
+
 """
 
 from ..utils.extreme_precipitation_analysis import calculate_p90,max_annual_precipitation
@@ -49,94 +43,17 @@ from ..utils.get_distribution import get_top_fitted_distributions,fit_data,get_c
 
 import pandas as pd
 import math
-import scipy.stats as st
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 
-def analyze_baseline_bias_corrected_gcms(
-    models: list[str],
-    bias_methods: list[str],
-    base_path: str = 'GCM_data/bias_correction',
-    frequency: str = 'daily',
-    group_name: str = 'GCM_baseline',
-    alpha: float = 0.05,
-    save_csv: bool = True,
-):
-    """
-    Realiza análise de dados simulados no período de baseline com diferentes modelos climáticos e métodos de correção de viés.
+"""
+--------------------------------------------------------------------------------------------------------------
+-------------------------------- QUANTILE MAPPING PARA CORREÇÃO DE VIÉS --------------------------------------
+--------------------------------------------------------------------------------------------------------------
+"""
 
-    Esta função processa séries temporais diárias simuladas por modelos climáticos globais (GCMs) corrigidos por diversos métodos,
-    referentes ao período histórico (baseline). Para cada combinação de modelo e método, calcula-se:
 
-    - Percentil 90 diário (P90)
-    - Agregação anual da série
-    - Máxima precipitação diária por ano
-    - Análise de tendência da precipitação anual e da precipitação máxima diária anual
-
-    Os dados processados podem ser exportados em formato `.csv`, e os resultados estatísticos são exibidos no console.
-
-    Parâmetros:
-    ----------
-    models : list of str
-        Lista dos nomes dos modelos climáticos utilizados (ex: ['HADGEM', 'MIROC5']).
-
-    bias_methods : list of str
-        Lista dos métodos de correção de viés aplicados aos dados simulados (ex: ['MD', 'PT', 'QM', 'DBC']).
-
-    base_path : str, default='GCM_data/bias_correction'
-        Caminho para o diretório onde estão armazenados os arquivos `.csv` com os dados corrigidos.
-        
-    frequency : str, default='daily'
-        Frequência dos dados a serem analisados.
-
-    group_name : str, default='GCM_baseline'
-        Nome do grupo a ser utilizado nas análises de tendência, útil para agrupamentos ou legendas.
-
-    alpha : float, default=0.05
-        Nível de significância para o teste estatístico de tendência (ex: 0.05 para 95% de confiança).
-
-    save_csv : bool, default=True
-        Se True, os dados agregados por ano e os máximos anuais são salvos como arquivos `.csv`.
-
-    Retorno:
-    -------
-    None
-        Os resultados são impressos no console e, se desejado, arquivos são salvos no diretório especificado.
-    """
-    
-    print('--- Baseline Analysis ---')
-    sites_list = []
-
-    for model in models:
-        for method in bias_methods:
-            name = f"{model}_baseline_{method}"
-            file_path = f"{base_path}/{name}_{frequency}.csv"
-
-            try:
-                df = pd.read_csv(file_path)
-            except FileNotFoundError:
-                print(f"[!] Arquivo não encontrado: {file_path}")
-                continue
-
-            print(f'--> P90 {name}: {calculate_p90(df=df)}')
-
-            if save_csv:
-                aggregate_to_csv(df=df,name=name,directory=base_path)
-
-                max_annual_precipitation(df=df,name_file=name,directory=base_path)
-
-            sites_list.append(name)
-
-    print('\n--> Trend analysis')
-    print('- Annual precipitation')
-    get_trend(var='Year', sites_list=sites_list, group=group_name, alpha=alpha,data_type='mod')
-
-    print('\n- Max_daily')
-    get_trend(var='Max_daily', sites_list=sites_list, group=group_name, alpha=alpha, data_type='mod')
-
-    print('\nDone!')
-    
 
 
 def prepare_data_pair(path_observed: str, path_gcm: str):
@@ -336,7 +253,3 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
     
     
 
-
-    
-    
-    
