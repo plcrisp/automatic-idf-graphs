@@ -35,13 +35,12 @@ estudos de impacto climático e análise de eventos extremos.
 
 """
 
-from ..utils.extreme_precipitation_analysis import calculate_p90,max_annual_precipitation
-from ..utils.data_processing import aggregate_to_csv,read_csv
-from ..utils.error_correction import verification, fill_missing_data
-from ..utils.quality_analysis import get_trend
-from ..utils.get_distribution import get_top_fitted_distributions,fit_data,get_common_distributions
+from utils.data_processing import read_csv
+from utils.error_correction import verification, fill_missing_data
+from utils.get_distribution import get_top_fitted_distributions,fit_data,get_common_distributions
 
 import pandas as pd
+import datetime
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -85,8 +84,8 @@ def prepare_data_pair(path_observed: str, path_gcm: str):
     verification(df_gcm)
 
     # Gap filling (assume que retorna DataFrame com coluna 'Precipitation')
-    df_obs = fill_missing_data(path_main=df_obs)
-    df_gcm = fill_missing_data(path_main=df_gcm)
+    df_obs = fill_missing_data(path_main=path_observed)
+    df_gcm = fill_missing_data(path_main=path_gcm)
 
     # Conversão e limpeza
     for df in [df_obs, df_gcm]:
@@ -113,6 +112,85 @@ def prepare_data_pair(path_observed: str, path_gcm: str):
     data_gcm = df_gcm['Precipitation'].values
 
     return data_obs, data_gcm, labels
+
+
+
+
+def load_and_clean_precipitation_data(file_path: str):
+    """
+    Loads a tab-separated file with columns: year, month, day, precipitation.
+    Filters out invalid dates and returns a DataFrame with columns:
+    year, month, day, date (datetime), and precipitation.
+
+    Parameters:
+        file_path (str): Path to the input file.
+
+    Returns:
+        pd.DataFrame: Cleaned and sorted DataFrame.
+    """
+
+    # Load data
+    df = read_csv(file_path)
+
+    # Convert to valid dates, invalid dates become NaT
+    def try_parse_date(row):
+        try:
+            return datetime.date(int(row["Year"]), int(row["Month"]), int(row["Day"]))
+        except ValueError:
+            return pd.NaT
+
+    df["Date"] = df.apply(try_parse_date, axis=1)
+
+    # Remove invalid dates
+    df = df[df["Date"].notna()]
+
+    # Convert date column to datetime64 type for consistency
+    df["Date"] = pd.to_datetime(df["Date"])
+
+    # Reset index and reorder columns
+    df = df.reset_index(drop=True)
+    df = df[["Date", "Precipitation", "Year", "Month", "Day"]]
+
+    return df
+
+
+
+
+def prepare_future_data(path_gcm_future: str):
+    df_future = read_csv(path_gcm_future)
+    
+    df_future = load_and_clean_precipitation_data(path_gcm_future)
+    
+    # Corrigir separadores incorretos (ponto para milhar, vírgula para decimal)
+    df_future['Precipitation'] = (
+        df_future['Precipitation']
+        .astype(str)
+        .str.replace('.', '', regex=False)  # remove milhar
+        .str.replace(',', '.', regex=False)  # converte decimal
+    )
+
+    # Converte para número
+    df_future['Precipitation'] = pd.to_numeric(df_future['Precipitation'], errors='coerce')
+    
+    verification(df_future)
+    
+    # Gap filling
+    df_future = fill_missing_data(path_main=path_gcm_future)
+    
+    # Remove valores inválidos
+    df_future.dropna(subset=['Precipitation'], inplace=True)
+    
+    # Cria coluna de data
+    df_future['Date'] = pd.to_datetime(df_future[['Year', 'Month', 'Day']])
+    
+    labels = df_future['Date'].dt.strftime('%d-%m-%y').tolist()
+    data_future = df_future['Precipitation'].values
+    
+    
+    print(df_future['Precipitation'].describe())
+    
+    return data_future, labels
+    
 
 
 
@@ -174,7 +252,7 @@ def get_adjusted_distributions(path_observed: str, path_gcm: str):
 
 
 
-def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str,  dir_obs: str = 'results', dir_gcm: str = 'GCM_data/bias_correction', plot=True):
+def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str,  dir_obs: str = 'results', dir_gcm: str = '../datasets/GCM', plot=True, save_csv_path: str = None):
     """
     Executa a correção de viés de modelos climáticos via Quantile Mapping com ajuste espacial e regressão log-linear.
 
@@ -192,6 +270,7 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
         dir_obs (str): Diretório onde está localizado o arquivo observado. Padrão: 'results'.
         dir_gcm (str): Diretório onde estão os arquivos GCM. Padrão: 'GCM_data/bias_correction'.
         plot (bool): Se True, plota a regressão log-linear. Padrão: True.
+        save_csv_path (str | None): Caminho para salvar o CSV com os dados corrigidos. Se None, não salva. Padrão: None.
 
     Retorna:
         pandas.DataFrame:
@@ -215,7 +294,7 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
     data_spatdown[data_spatdown < 0] = 0  # remove negativos
 
     # Etapa 3: Regressão log-linear entre GCM baseline e série corrigida
-    x = np.log(data_gcm_baseline + 1e-6)  # evita log(0)
+    x = np.log1p(data_gcm_baseline)
     y = data_spatdown
 
     coefs = np.polyfit(x, y, 1)
@@ -223,10 +302,10 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
     model = np.poly1d(coefs)
     r2 = r2_score(y, model(x))
     
-    data_obs, data_gcm_future = prepare_data_pair(path_observed, path_gcm_future)
+    data_gcm_future, labels_future = prepare_future_data(path_gcm_future)
 
     # Etapa 4: Aplicação ao cenário futuro
-    x_future = np.log(data_gcm_future + 1e-6)
+    x_future = np.log1p(data_gcm_future)
     data_corrected = model(x_future)
     data_corrected[data_corrected < 0] = 0
 
@@ -244,12 +323,18 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
         plt.show()
 
     df_corrected = pd.DataFrame({
-        'Date': labels,
+        'Date': labels_future,
         'Precipitation Original': data_gcm_future,
         'Precipitation': data_corrected
     })
+    
+    # Salva CSV se caminho for informado
+    if save_csv_path is not None:
+        df_corrected.to_csv(save_csv_path, index=False)
 
     return df_corrected
     
     
 
+
+quantile_mapping(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM', plot=True, save_csv_path='results/inmet_santana/inmet_santana_future.csv')
