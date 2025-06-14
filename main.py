@@ -1,5 +1,5 @@
 # Importações dos módulos utilitários
-from utils.get_datasets import process_data, DataSource
+from utils.get_datasets import process_data, DataSource, get_inmet_data
 from utils.data_processing import aggregate_to_csv, read_csv, distribution_plot_df
 from utils.error_correction import verification, fill_missing_data
 from utils.quality_analysis import process_precipitation_series
@@ -19,8 +19,10 @@ inmet_santana = process_data(source=DataSource.INMET_DAILY, data_path='./dataset
 aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inmet_santana')
 '''
 
-process_precipitation_series(file_names=['results/cemaden_santana/cemaden_santana_daily.csv','results/inmet_santana/inmet_santana_daily.csv'])
+inmet = get_inmet_data(process=True)
 
+# process_precipitation_series(file_names=['results/cemaden_santana/cemaden_santana_daily.csv','results/inmet_santana/inmet_santana_daily.csv'])
+ 
 '''
 # Leitura dos dados agregados
 cemaden_santana_daily = read_csv(path='results/cemaden_santana/cemaden_santana_daily.csv')
