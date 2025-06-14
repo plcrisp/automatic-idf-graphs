@@ -1,1 +1,52 @@
+# .gitignore for Automatic-IDF-Graphs
+
+# Secrets & Credentials   #
 .env
+*.env
+
+# Virtual Environments    #
+.venv/
+venv/
+env/
+*env/
+.env/
+
+# Generated Data and Results           #
+results/
+datasets/
+data/
+
+# Python Cache & Bytecode              #
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing & Coverage Tools             #
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+
+# Packaging & Build Artifacts          #
+build/
+dist/
+*.egg-info/
+*.egg
+
+# IDE & Editor Configurations          #
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Operating System Files               #
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Log Files                              #
+*.log
+logs/
