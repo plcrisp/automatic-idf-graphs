@@ -35,11 +35,10 @@ estudos de impacto climático e análise de eventos extremos.
 
 """
 
-from ...data.processing import read_csv, verification, fill_missing_data
-from src.idf_analysis.core.distributions import get_top_fitted_distributions,fit_data,get_common_distributions
+from ...core.distributions import get_top_fitted_distributions,fit_data,get_common_distributions
+from .baseline_analysis import prepare_data_pair, prepare_future_data
 
 import pandas as pd
-import datetime
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -51,145 +50,6 @@ from sklearn.metrics import r2_score
 --------------------------------------------------------------------------------------------------------------
 """
 
-
-
-
-def prepare_data_pair(path_observed: str, path_gcm: str):
-    """
-    Prepara e sincroniza dois conjuntos de dados de precipitação (observado e simulado) para análise conjunta.
-
-    Este processo inclui:
-    1. Leitura e verificação dos arquivos CSV com dados diários de precipitação.
-    2. Preenchimento de falhas nos dados (gap filling) com base na função `fill_missing_data`.
-    3. Conversão das datas para o formato datetime e sincronização de ambos os datasets para um período comum.
-    4. Extração dos dados de precipitação e dos rótulos temporais no formato 'DD-MM-AA'.
-
-    Parâmetros:
-        path_observed (str): Caminho completo para o arquivo CSV com os dados observados.
-        path_gcm (str): Caminho completo para o arquivo CSV com os dados simulados (GCM).
-
-    Retorna:
-        Tuple[np.ndarray, np.ndarray, List[str]]:
-            - Array com dados de precipitação observada.
-            - Array com dados de precipitação simulada (GCM).
-            - Lista de datas no formato 'DD-MM-AA' correspondentes às observações sincronizadas.
-    """
-    # Leitura e verificação
-    
-    df_obs = read_csv(path_observed)
-    df_gcm = read_csv(path_gcm)
-
-    verification(df_obs)
-    verification(df_gcm)
-
-    # Gap filling (assume que retorna DataFrame com coluna 'Precipitation')
-    df_obs = fill_missing_data(path_main=path_observed)
-    df_gcm = fill_missing_data(path_main=path_gcm)
-
-    # Conversão e limpeza
-    for df in [df_obs, df_gcm]:
-        df['Precipitation'] = pd.to_numeric(df['Precipitation'], errors='coerce')
-        df.dropna(subset=['Precipitation'], inplace=True)
-        df['Date'] = pd.to_datetime(df[['Year', 'Month', 'Day']])
-        
-    # Determina o intervalo em comum
-    start_date = max(df_obs['Date'].min(), df_gcm['Date'].min())
-    end_date = min(df_obs['Date'].max(), df_gcm['Date'].max())
-    
-    print(f"Período comum considerado: {start_date.strftime('%d-%m-%Y')} até {end_date.strftime('%d-%m-%Y')}")
-
-    # Filtra ambos para o mesmo intervalo
-    df_obs = df_obs[(df_obs['Date'] >= start_date) & (df_obs['Date'] <= end_date)].copy()
-    df_gcm = df_gcm[(df_gcm['Date'] >= start_date) & (df_gcm['Date'] <= end_date)].copy()
-
-    # Verifica se ainda estão sincronizados
-    if not df_obs['Date'].equals(df_gcm['Date']):
-        raise ValueError("Datas dos datasets não estão alinhadas mesmo após o corte.")
-
-    labels = df_obs['Date'].dt.strftime('%d-%m-%y').tolist()
-    data_obs = df_obs['Precipitation'].values
-    data_gcm = df_gcm['Precipitation'].values
-
-    return data_obs, data_gcm, labels
-
-
-
-
-def load_and_clean_precipitation_data(file_path: str):
-    """
-    Loads a tab-separated file with columns: year, month, day, precipitation.
-    Filters out invalid dates and returns a DataFrame with columns:
-    year, month, day, date (datetime), and precipitation.
-
-    Parameters:
-        file_path (str): Path to the input file.
-
-    Returns:
-        pd.DataFrame: Cleaned and sorted DataFrame.
-    """
-
-    # Load data
-    df = read_csv(file_path)
-
-    # Convert to valid dates, invalid dates become NaT
-    def try_parse_date(row):
-        try:
-            return datetime.date(int(row["Year"]), int(row["Month"]), int(row["Day"]))
-        except ValueError:
-            return pd.NaT
-
-    df["Date"] = df.apply(try_parse_date, axis=1)
-
-    # Remove invalid dates
-    df = df[df["Date"].notna()]
-
-    # Convert date column to datetime64 type for consistency
-    df["Date"] = pd.to_datetime(df["Date"])
-
-    # Reset index and reorder columns
-    df = df.reset_index(drop=True)
-    df = df[["Date", "Precipitation", "Year", "Month", "Day"]]
-
-    return df
-
-
-
-
-def prepare_future_data(path_gcm_future: str):
-    df_future = read_csv(path_gcm_future)
-    
-    df_future = load_and_clean_precipitation_data(path_gcm_future)
-    
-    # Corrigir separadores incorretos (ponto para milhar, vírgula para decimal)
-    df_future['Precipitation'] = (
-        df_future['Precipitation']
-        .astype(str)
-        .str.replace('.', '', regex=False)  # remove milhar
-        .str.replace(',', '.', regex=False)  # converte decimal
-    )
-
-    # Converte para número
-    df_future['Precipitation'] = pd.to_numeric(df_future['Precipitation'], errors='coerce')
-    
-    verification(df_future)
-    
-    # Gap filling
-    df_future = fill_missing_data(path_main=path_gcm_future)
-    
-    # Remove valores inválidos
-    df_future.dropna(subset=['Precipitation'], inplace=True)
-    
-    # Cria coluna de data
-    df_future['Date'] = pd.to_datetime(df_future[['Year', 'Month', 'Day']])
-    
-    labels = df_future['Date'].dt.strftime('%d-%m-%y').tolist()
-    data_future = df_future['Precipitation'].values
-    
-    
-    print(df_future['Precipitation'].describe())
-    
-    return data_future, labels
-    
 
 
 
