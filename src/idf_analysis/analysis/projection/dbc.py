@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .quant_map_bias_correction import prepare_data_pair, prepare_future_data
+from .quantile_mapping import prepare_data_pair, prepare_future_data
 
 def dbc_percentilico(
     name_obs: str,

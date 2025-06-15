@@ -1,13 +1,6 @@
 # Importações dos módulos utilitários
-from utils.get_datasets import process_data, DataSource, get_inmet_data
-from utils.data_processing import aggregate_to_csv, read_csv, distribution_plot_df
-from utils.error_correction import verification, fill_missing_data
-from utils.quality_analysis import process_precipitation_series
-from utils.extreme_precipitation_analysis import calculate_p90, max_annual_precipitation
-from utils.extreme_precipitation_visualization import plot_subdaily_maximum, plot_comparative_absolute
-from utils.intervals_manipulation import get_subdaily_from_disagregation_factors, DisaggregationScenario
-from utils.get_distribution import get_distribution,CommonDistributions
-from utils.idf_generator import *
+from .data.api import get_inmet_data
+from .data.reader import process_data, DataSource
 
 from typing import Optional, List
 

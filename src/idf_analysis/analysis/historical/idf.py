@@ -58,8 +58,8 @@ import scipy.stats as st
 import matplotlib.pyplot as plt
 import os
 
-from .error_correction import remove_outliers_from_max
-from .get_distribution import fit_data, get_top_fitted_distributions
+from ...data.processing import remove_outliers_from_max
+from ...core.distributions import fit_data, get_top_fitted_distributions
 from scipy.optimize import minimize_scalar
 from sklearn.linear_model import LinearRegression
 

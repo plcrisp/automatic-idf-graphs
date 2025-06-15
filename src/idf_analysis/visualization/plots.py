@@ -11,8 +11,45 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 
-from collections import Counter
 
+
+def distribution_plot_df(df, show_max=False):
+    """
+    Gera um gráfico de densidade dos dados de precipitação 
+    a partir de um DataFrame, com a opção de exibir o maior valor no gráfico.
+
+    Parâmetros:
+    df (DataFrame): Um DataFrame contendo uma coluna 'Precipitation' 
+                    com os dados de precipitação.
+    show_max (bool): Se True, exibe o maior valor de precipitação no gráfico.
+
+    Retorna:
+    None: Exibe o gráfico de densidade.
+    """
+    
+    # Remove valores ausentes da coluna 'Precipitation'
+    df = df.dropna(subset=['Precipitation'])
+    
+    # Gera o gráfico de densidade
+    sns.kdeplot(df['Precipitation'], color='skyblue', fill=True)
+    
+    # Se show_max for True, encontra e exibe o maior valor
+    if show_max:
+        max_value = df['Precipitation'].max()
+        plt.annotate(f'Máximo: {max_value} mm', 
+                     xy=(0.67, 0.9), 
+                     xycoords='axes fraction',
+                     fontsize=9, color='grey', weight='bold', 
+                     bbox=dict(facecolor='white', edgecolor='grey', boxstyle='round,pad=1'))
+    
+    # Configurações do gráfico
+    plt.title('Distribuição de Precipitação')
+    plt.xlabel('Precipitação (mm)')
+    plt.ylabel('Densidade')
+    
+    # Exibe o gráfico
+    plt.show()
+    
 
 
 def plot_subdaily_maximum(name_file, directory='Results', var_value=0.2, relative=False):

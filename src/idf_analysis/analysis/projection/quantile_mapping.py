@@ -35,9 +35,8 @@ estudos de impacto climático e análise de eventos extremos.
 
 """
 
-from utils.data_processing import read_csv
-from utils.error_correction import verification, fill_missing_data
-from utils.get_distribution import get_top_fitted_distributions,fit_data,get_common_distributions
+from ...data.processing import read_csv, verification, fill_missing_data
+from src.idf_analysis.core.distributions import get_top_fitted_distributions,fit_data,get_common_distributions
 
 import pandas as pd
 import datetime

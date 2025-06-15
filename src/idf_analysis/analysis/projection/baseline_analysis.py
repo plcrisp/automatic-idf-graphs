@@ -40,9 +40,9 @@ Os arquivos CSV devem estar organizados em:
 Exemplo de nome de arquivo: `HADGEM_baseline_QM_daily.csv`
 """
 
-from ..utils.extreme_precipitation_analysis import calculate_p90,max_annual_precipitation
-from ..utils.data_processing import aggregate_to_csv
-from ..utils.quality_analysis import get_trend
+from ..historical.extremes import calculate_p90,max_annual_precipitation
+from ...data.processing import aggregate_to_csv
+from ..historical.trend import get_trend
 
 import pandas as pd
 
