@@ -4,8 +4,8 @@ from unidecode import unidecode
 from dotenv import load_dotenv
 from importlib import resources
 
-from .processing import aggregate_to_csv
-from .reader import process_data, DataSource
+from ..processing import aggregate_to_csv
+from ..reader import process_data, DataSource
 
 import os
 import questionary
@@ -38,7 +38,6 @@ def load_inmet_station_parameters() -> pd.DataFrame:
 
 
 def get_inmet_data(
-    stations_path: str = "./parameters/estacoes_inmet.csv",
     process: bool = True,
 ):
     """Baixa dados diários de precipitação de uma estação *operante* do INMET.
