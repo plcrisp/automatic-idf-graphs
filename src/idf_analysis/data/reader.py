@@ -176,11 +176,14 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None, sh
         if generate_map:
             generate_cemaden_map(data_path, CEMADEN_df)
 
-        # Filtra a estação desejada
-        station_df = CEMADEN_df[CEMADEN_df['Site'] == site_filter]
+        if site_filter != "API":
+            # Filtra a estação desejada
+            station_df = CEMADEN_df[CEMADEN_df['Site'] == site_filter]
 
-        if station_df.empty:
-            raise ValueError(f"Nenhum dado encontrado para a estação '{site_filter}'.")
+            if station_df.empty:
+                raise ValueError(f"Nenhum dado encontrado para a estação '{site_filter}'.")
+        else:
+            station_df = CEMADEN_df
         
         print("\n✅ Processamento concluído!\n")
 
