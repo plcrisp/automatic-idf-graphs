@@ -1,5 +1,6 @@
 # Importações dos módulos utilitários
-from .data.api import get_inmet_data
+from .data.api.inmet import get_inmet_data
+from .data.api.cemaden import get_cemaden_data, finalizar_requisicao_por_id
 from .data.reader import process_data, DataSource
 
 from typing import Optional, List
@@ -12,7 +13,10 @@ inmet_santana = process_data(source=DataSource.INMET_DAILY, data_path='./dataset
 aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inmet_santana')
 '''
 
-inmet = get_inmet_data(process=True)
+#inmet = get_inmet_data()
+#cemaden = get_cemaden_data()
+
+finalizar_requisicao_por_id(49444, {'codestacao': '120070801A', 'id_tipoestacao': 1, 'nome': 'Cageacre'}, 'XAPURI')
 
 # process_precipitation_series(file_names=['results/cemaden_santana/cemaden_santana_daily.csv','results/inmet_santana/inmet_santana_daily.csv'])
  
