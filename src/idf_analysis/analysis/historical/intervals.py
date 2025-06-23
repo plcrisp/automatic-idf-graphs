@@ -20,6 +20,8 @@ Este código é útil para análise hidrológica, auxiliando na preparação de 
 
 import pandas as pd
 from enum import Enum
+from importlib import resources
+
 
 
 class DisaggregationScenario(Enum):
@@ -77,31 +79,36 @@ def aggregate_precipitation(df, interval, dt_min=False):
 
 
 
-def get_disagregation_factors(var_value, filename='parameters/fatores_desagregacao.csv'):
+def get_disaggregation_factors(var_value: float) -> pd.DataFrame:
     """
-    Lê os fatores de desagregação de um arquivo CSV e calcula fatores 
-    baseados em um valor de variável fornecido.
+    Lê os fatores de desagregação de um arquivo de recursos do pacote e 
+    calcula fatores baseados em um valor de variável fornecido.
 
     Parâmetros:
-    var_value (float): Valor utilizado para calcular os fatores de desagregação.
-    filename (str): Nome do arquivo CSV contendo os fatores de desagregação (padrão é 'fatores_desagregacao.csv').
+        var_value (float): Valor utilizado para calcular os fatores de desagregação.
     
     Retorna:
-    DataFrame: Um DataFrame contendo os fatores de desagregação calculados.
+        pd.DataFrame: Um DataFrame contendo os fatores de desagregação calculados.
+                      Retorna um DataFrame vazio se o arquivo não for encontrado.
     """
-    # Lê o arquivo CSV contendo os fatores de desagregação
-    df_disagreg_factors = pd.read_csv(filename)
-    
-    # Calcula os fatores de desagregação
-    df_disagreg_factors['CETESB_p{v}'.format(v=var_value)] = df_disagreg_factors['CETESB_ger'] * (1 + var_value)
-    df_disagreg_factors['CETESB_m{v}'.format(v=var_value)] = df_disagreg_factors['CETESB_ger'] * (1 - var_value)
-    
-    return df_disagreg_factors
+    try:
+        with resources.files('idf_analysis.resources').joinpath('disaggregation_factors.csv').open('r', encoding='utf-8') as f:
+            
+            df_disagreg_factors = pd.read_csv(f)
+            
+        df_disagreg_factors[f'CETESB_p{var_value}'] = df_disagreg_factors['CETESB_ger'] * (1 + var_value)
+        df_disagreg_factors[f'CETESB_m{var_value}'] = df_disagreg_factors['CETESB_ger'] * (1 - var_value)
+        
+        return df_disagreg_factors
+
+    except (FileNotFoundError, ModuleNotFoundError):
+        print("Erro: Não foi possível encontrar o arquivo 'fatores_desagregacao.csv' dentro do pacote.")
+        return pd.DataFrame()
 
 
 
 
-def get_subdaily_from_disagregation_factors(df, scenario: DisaggregationScenario, var_value: float, name_file: str, directory='Results'):
+def get_subdaily_from_disaggregation_factors(df, scenario: DisaggregationScenario, name_file: str,var_value: float = 0.2, directory='Results'):
     """
     Calcula os valores subdiários de precipitação baseados em fatores de desagregação.
 
@@ -126,7 +133,7 @@ def get_subdaily_from_disagregation_factors(df, scenario: DisaggregationScenario
     None: Salva um CSV com os valores subdiários calculados.
     """
     df_subdaily = df.copy()
-    df_disagreg_factors = get_disagregation_factors(var_value)
+    df_disagreg_factors = get_disaggregation_factors(var_value)
 
     if scenario == DisaggregationScenario.BASE:
         type_tag = 'ger'
@@ -147,12 +154,13 @@ def get_subdaily_from_disagregation_factors(df, scenario: DisaggregationScenario
         if i < len(df_disagreg_factors):
             factor = df_disagreg_factors[col_name].iloc[i]
             column_name = f'Max_{interval}min' if interval < 60 else f'Max_{interval // 60}h'
-            df_subdaily[column_name] = df_subdaily['Precipitation'] * factor
+            df_subdaily[column_name] = (df_subdaily['Precipitation'] * factor).round(2)
         else:
             print(f"Intervalo {interval} não encontrado em fatores de desagregação.")
 
     output_path = f'{directory}/max_subdaily_{name_file}_{type_tag}.csv'
     df_subdaily.to_csv(output_path, index=False)
     print(f'Resultado salvo em {output_path}')
+    return df_subdaily
 
 
