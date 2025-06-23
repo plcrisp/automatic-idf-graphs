@@ -41,8 +41,8 @@ def get_subdaily_extremes(df, interval, dt_min=False, return_max_only=True):
             subdaily_list = aggregate_precipitation(df_new, interval, dt_min)
 
         # Adiciona o máximo e mínimo encontrados às respectivas listas
-        max_subdaily_list.append(max(subdaily_list))
-        min_subdaily_list.append(min(subdaily_list))
+        max_subdaily_list.append(max(subdaily_list).round(2))
+        min_subdaily_list.append(min(subdaily_list).round(2))
 
     # Cria um DataFrame resultante com os anos
     if return_max_only:

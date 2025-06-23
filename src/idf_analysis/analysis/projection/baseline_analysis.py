@@ -46,6 +46,9 @@ from ..historical.trend import get_trend
 
 import pandas as pd
 import datetime
+import numpy as np
+from typing import Tuple, List, Union
+
 
 
 """
@@ -140,7 +143,11 @@ def analyze_baseline_bias_corrected_gcms(
     
 
 
-def prepare_data_pair(path_observed: str, path_gcm: str):
+def prepare_data_pair(
+    path_observed: str,
+    path_gcm: str,
+    return_dataframes: bool = False
+) -> Union[Tuple[np.ndarray, np.ndarray, List[str]], Tuple[pd.DataFrame, pd.DataFrame]]:
     """
     Prepara e sincroniza dois conjuntos de dados de precipitação (observado e simulado) para análise conjunta.
 
@@ -148,55 +155,63 @@ def prepare_data_pair(path_observed: str, path_gcm: str):
     1. Leitura e verificação dos arquivos CSV com dados diários de precipitação.
     2. Preenchimento de falhas nos dados (gap filling) com base na função `fill_missing_data`.
     3. Conversão das datas para o formato datetime e sincronização de ambos os datasets para um período comum.
-    4. Extração dos dados de precipitação e dos rótulos temporais no formato 'DD-MM-AA'.
+    4. Extração dos dados de precipitação e dos rótulos temporais ou retorno dos DataFrames completos.
 
     Parâmetros:
         path_observed (str): Caminho completo para o arquivo CSV com os dados observados.
         path_gcm (str): Caminho completo para o arquivo CSV com os dados simulados (GCM).
+        return_dataframes (bool, opcional): Se True, a função retorna os dois DataFrames sincronizados.
+                                             Se False (padrão), retorna os arrays de dados e os rótulos de data.
 
     Retorna:
-        Tuple[np.ndarray, np.ndarray, List[str]]:
-            - Array com dados de precipitação observada.
-            - Array com dados de precipitação simulada (GCM).
-            - Lista de datas no formato 'DD-MM-AA' correspondentes às observações sincronizadas.
+        Union[Tuple[np.ndarray, np.ndarray, List[str]], Tuple[pd.DataFrame, pd.DataFrame]]:
+            - Se `return_dataframes` for False (padrão):
+                - Array com dados de precipitação observada.
+                - Array com dados de precipitação simulada (GCM).
+                - Lista de datas no formato 'DD-MM-AA' correspondentes às observações.
+            - Se `return_dataframes` for True:
+                - DataFrame com os dados observados, sincronizado e limpo.
+                - DataFrame com os dados do GCM, sincronizado e limpo.
     """
-    # Leitura e verificação
-    
+    # --- Leitura, verificação e preenchimento de falhas ---
     df_obs = read_csv(path_observed)
     df_gcm = read_csv(path_gcm)
 
     verification(df_obs)
     verification(df_gcm)
 
-    # Gap filling (assume que retorna DataFrame com coluna 'Precipitation')
     df_obs = fill_missing_data(path_main=path_observed)
     df_gcm = fill_missing_data(path_main=path_gcm)
 
-    # Conversão e limpeza
+    # --- Conversão, limpeza e criação da coluna de data ---
     for df in [df_obs, df_gcm]:
         df['Precipitation'] = pd.to_numeric(df['Precipitation'], errors='coerce')
         df.dropna(subset=['Precipitation'], inplace=True)
         df['Date'] = pd.to_datetime(df[['Year', 'Month', 'Day']])
         
-    # Determina o intervalo em comum
+    # --- Sincronização: Determina e filtra pelo intervalo de datas em comum ---
     start_date = max(df_obs['Date'].min(), df_gcm['Date'].min())
     end_date = min(df_obs['Date'].max(), df_gcm['Date'].max())
     
     print(f"Período comum considerado: {start_date.strftime('%d-%m-%Y')} até {end_date.strftime('%d-%m-%Y')}")
 
-    # Filtra ambos para o mesmo intervalo
     df_obs = df_obs[(df_obs['Date'] >= start_date) & (df_obs['Date'] <= end_date)].copy()
     df_gcm = df_gcm[(df_gcm['Date'] >= start_date) & (df_gcm['Date'] <= end_date)].copy()
 
-    # Verifica se ainda estão sincronizados
-    if not df_obs['Date'].equals(df_gcm['Date']):
+    # --- Verificação final e retorno condicional ---
+    if not df_obs['Date'].reset_index(drop=True).equals(df_gcm['Date'].reset_index(drop=True)):
+        # Nota: reset_index é usado para comparar apenas os valores das datas, ignorando o índice do DataFrame
         raise ValueError("Datas dos datasets não estão alinhadas mesmo após o corte.")
 
-    labels = df_obs['Date'].dt.strftime('%d-%m-%y').tolist()
-    data_obs = df_obs['Precipitation'].values
-    data_gcm = df_gcm['Precipitation'].values
-
-    return data_obs, data_gcm, labels
+    if return_dataframes:
+        # Opção 1: Retorna os DataFrames completos e sincronizados
+        return df_obs, df_gcm
+    else:
+        # Opção 2 (Padrão): Retorna os arrays e os rótulos
+        labels = df_obs['Date'].dt.strftime('%d-%m-%y').tolist()
+        data_obs = df_obs['Precipitation'].values
+        data_gcm = df_gcm['Precipitation'].values
+        return data_obs, data_gcm, labels
 
 
 
@@ -239,7 +254,7 @@ def load_and_clean_precipitation_data(file_path: str):
 
 
 
-def prepare_future_data(path_gcm_future: str):
+def prepare_future_data(path_gcm_future: str, return_dataframes: bool = False):
     df_future = read_csv(path_gcm_future)
     
     df_future = load_and_clean_precipitation_data(path_gcm_future)
@@ -265,11 +280,14 @@ def prepare_future_data(path_gcm_future: str):
     
     # Cria coluna de data
     df_future['Date'] = pd.to_datetime(df_future[['Year', 'Month', 'Day']])
+        
+    if return_dataframes:
+        # Opção 1: Retorna os DataFrames completos e sincronizados
+        return df_future
+    else:
+        # Opção 2 (Padrão): Retorna os arrays e os rótulos
+        labels = df_future['Date'].dt.strftime('%d-%m-%y').tolist()
+        data_future = df_future['Precipitation'].values
+        return data_future, labels
     
-    labels = df_future['Date'].dt.strftime('%d-%m-%y').tolist()
-    data_future = df_future['Precipitation'].values
     
-    
-    print(df_future['Precipitation'].describe())
-    
-    return data_future, labels
