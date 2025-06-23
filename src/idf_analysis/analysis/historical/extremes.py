@@ -37,7 +37,7 @@ def calculate_p90(df):
 
 
 
-def max_annual_precipitation(df, name_file, output_dir='Results'):
+def max_annual_precipitation(df, name_file, output_dir='Results',outliers=False):
     """
     Calcula o valor máximo de precipitação anual para cada ano e remove os outliers.
     Em seguida, salva o resultado em um arquivo CSV no diretório especificado.
@@ -55,9 +55,11 @@ def max_annual_precipitation(df, name_file, output_dir='Results'):
     
     # Agrupar por ano e calcular o valor máximo de precipitação anual
     df_new = df.groupby(['Year'])['Precipitation'].max().reset_index()
+    df_new['Precipitation'] = df_new['Precipitation'].round(2)
     
-    # Remover outliers usando a função auxiliar
-    df_new = remove_outliers_from_max(df_new)
+    # Remover outliers usando a função auxiliar caso especificado
+    if not outliers:
+        df_new = remove_outliers_from_max(df_new)
     
     # Garantir que o diretório de saída exista
     os.makedirs(output_dir, exist_ok=True)
