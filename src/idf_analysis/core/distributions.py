@@ -347,7 +347,7 @@ def get_top_fitted_distributions(data, results, n, distributions=None):
     for dist_enum, (sse, arg, loc, scale) in selected_distributions.items():
         c = arg[0] if len(arg) > 0 else float('nan')
         result_rows.append({
-            'distribution': dist_enum.name.capitalize(),
+            'distribution': dist_enum.value[0],
             'sse': sse,
             'c': c,
             'loc': loc,
@@ -358,7 +358,7 @@ def get_top_fitted_distributions(data, results, n, distributions=None):
 
 
 
-def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory='../results', distributions=None):
+def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory='../results', distributions=None, plot=True):
     """
     Função principal para carregar, analisar e ajustar distribuições a dados de precipitação (diários ou subdiários).
 
@@ -380,8 +380,10 @@ def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory
                                                                Se fornecida, ignora `n_distributions`.
 
     Retorna:
-        None: Salva os resultados em um arquivo CSV e exibe mensagens de conclusão.
+        scipy.stats.rv_continuous: O objeto da distribuição Scipy que melhor se ajustou aos dados.
+                                   Retorna None se ocorrer um erro.
     """
+    # ... (toda a parte inicial da função permanece igual até a leitura dos dados)
     if distributions is None:
         if not isinstance(n, int) or n <= 0:
             raise ValueError("O parâmetro 'n' deve ser um número inteiro positivo.")
@@ -396,36 +398,58 @@ def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory
         file_path = f'{directory}/max_subdaily_{name_file}{disag_factor}.csv'
         column_name = duration
 
-    # Tentativa de leitura
     try:
         data_df_original = pd.read_csv(file_path)
     except FileNotFoundError:
         print(f"Erro: O arquivo '{file_path}' não foi encontrado.")
-        return
+        return None
 
     if column_name not in data_df_original.columns:
         print(f"Erro: A coluna '{column_name}' não foi encontrada no arquivo.")
-        return
+        return None
 
-    # Dados
     data_df = data_df_original[[column_name]]
     data = data_df.values.ravel()
 
     # Ajuste das distribuições
-    results = fit_data(data,distributions=distributions)
+    results = fit_data(data, distributions=distributions)
 
     # Gráficos
-    plot_histogram(data, results, n=n, distributions=distributions)
-    plot_cdf_comparison(data, results, n=n, distributions=distributions)
+    if plot:
+        plot_histogram(data, results, n=n, distributions=distributions)
+        plot_cdf_comparison(data, results, n=n, distributions=distributions)
 
-    # Tabela de parâmetros
+    # Tabela de parâmetros (esta parte continua a mesma)
     df_parameters = get_top_fitted_distributions(data, results, n=n, distributions=distributions)
-
-    # Salvamento
+    
+    # Salvamento (esta parte continua a mesma)
     output_file = f'{directory}/{name_file}_dist_params.csv'
     df_parameters.to_csv(output_file, index=False)
 
-    print(f"Processamento concluído. Parâmetros salvos em '{output_file}'.")
+    if df_parameters.empty:
+        print("Aviso: Nenhum parâmetro de distribuição foi gerado. Retornando None.")
+        return None
+
+    best_fit_series = df_parameters.iloc[0]
+    friendly_name = best_fit_series['distribution']
+
+    dist_enum = next(d for d in CommonDistributions if d.value[0] == friendly_name)
+
+    dist_name  = dist_enum.value[1].name
+
+    dist_class = dist_enum.value[1]
+    params_dict = best_fit_series.drop(['distribution', 'sse']).dropna().to_dict()
+    if dist_name == 'lognorm' and 'c' in params_dict:
+        params_dict['s'] = params_dict.pop('c')
+
+    try:
+        best_dist_object = dist_class(**params_dict)
+        
+        return best_dist_object
+
+    except (AttributeError, TypeError) as e:
+        print(f"Erro ao reconstruir o objeto da distribuição '{dist_name}': {e}")
+        return None
 
     
     
