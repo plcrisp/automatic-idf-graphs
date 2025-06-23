@@ -3,6 +3,7 @@ from .data.api.inmet import get_inmet_data
 from .data.api.cemaden import get_cemaden_data, finalizar_requisicao_por_id
 from .data.reader import process_data, DataSource
 from .analysis.projection.eqm import eqm_downscaling
+from .analysis.historical.idf import get_final_idf
 
 from typing import Optional, List
 
@@ -17,7 +18,7 @@ aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inme
 #inmet = get_inmet_data()
 #cemaden = get_cemaden_data()
 
-eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
+#eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
 
 #finalizar_requisicao_por_id(49444, {'codestacao': '120070801A', 'id_tipoestacao': 1, 'nome': 'Cageacre'}, 'XAPURI')
 
@@ -78,6 +79,7 @@ get_distribution(name_file='inmet_santana', directory='results/inmet_santana', d
 
 
 # Geração e plotagem das curvas IDF finais
+'''
 get_final_idf(
     name_file='inmet_santana',
     directory='results/inmet_santana',
@@ -90,6 +92,7 @@ get_final_idf(
     plot_directory='results/inmet_santana/graphs/idf',
     generate_tables=True
 )
+'''
 
 
 
@@ -147,7 +150,8 @@ def complete_precipitation_analysis(
     get_distribution(name_file=name_file, directory=directory, disag_factor=f'_p{var_value}', duration='Max_24h')
 
     # Geração da curva IDF final
-    get_final_idf(
+    
+get_final_idf(
         name_file=name_file,
         directory=directory,
         disag_factor=f'p{var_value}',
@@ -156,9 +160,9 @@ def complete_precipitation_analysis(
         durations=durations,
         return_periods=return_periods,
         save_plot=True,
-        plot_directory=f'{directory}/graphs/idf',
-        generate_tables=True
-    )
+    plot_directory=f'{directory}/graphs/idf',
+    generate_tables=True
+)
  
     
 plot_comparative_absolute(entries=[{"name_file": "inmet_santana", "directory": "results/inmet_santana"},

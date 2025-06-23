@@ -348,6 +348,7 @@ def get_top_fitted_distributions(data, results, n, distributions=None):
         c = arg[0] if len(arg) > 0 else float('nan')
         result_rows.append({
             'distribution': dist_enum.value[0],
+            'distribution_object': dist_enum.value[1],
             'sse': sse,
             'c': c,
             'loc': loc,

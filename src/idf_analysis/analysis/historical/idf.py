@@ -135,7 +135,7 @@ def calculate_theoretical_max_precipitations(
     best_params = get_top_fitted_distributions(values, fit_results, n=1).iloc[0]
 
     # Seleciona e instancia a distribuição ajustada
-    dist = getattr(st, best_params['distribution'].lower())
+    dist = best_params['distribution_object']
     prob_func = (
         dist(best_params['loc'], best_params['scale']) if math.isnan(best_params['c'])
         else dist(best_params['c'], best_params['loc'], best_params['scale'])
