@@ -133,7 +133,7 @@ def get_inmet_data(
         return
 
     url = (
-        "https://apitempo.inmet.gov.br/token/estacao/diaria/"
+        "https://apitempo.inmet.gov.br/token/estacao/"
         f"{data_inicial.date()}/{data_final.date()}/{cod_estacao}/{token}"
     )
     print("\n📡 Consultando API…\n")
@@ -150,10 +150,11 @@ def get_inmet_data(
 
     # Transformação
     df_dados = (
-        pd.DataFrame(dados_json)[["DT_MEDICAO", "CHUVA"]]
+        pd.DataFrame(dados_json)[["DT_MEDICAO", "HR_MEDICAO", "CHUVA"]]
         .rename(
             columns={
                 "DT_MEDICAO": "Data Medicao",
+                "HR_MEDICAO": "Hora Medicao",
                 "CHUVA": "PRECIPITACAO TOTAL, DIARIO(mm)",
             }
         )
@@ -171,19 +172,43 @@ def get_inmet_data(
     caminho_csv = os.path.join(pasta, f"inmet_{nome_limpo}.csv")
 
     if os.path.exists(caminho_csv):
+        
+        def padronizar_hora(hora):
+            try:
+                # Se já estiver no formato HH:MM, apenas retorne
+                if isinstance(hora, str) and ":" in hora:
+                    return hora
+
+                # Se for numérico, converte para string no formato HH:MM
+                hora_str = str(int(float(hora))).zfill(4)
+                return f"{hora_str[:2]}:{hora_str[2:]}"
+            except Exception:
+                return "00:00"  # fallback seguro
+        
         df_existente = (
             pd.read_csv(caminho_csv, sep=";")
             .loc[:, lambda d: ~d.columns.str.startswith("Unnamed")]
         )
-        df_existente["Data Medicao"] = pd.to_datetime(df_existente["Data Medicao"])
-        df_dados["Data Medicao"] = pd.to_datetime(df_dados["Data Medicao"])
+
+        df_existente["DataHora"] = pd.to_datetime(
+            df_existente["Data Medicao"] + " " + df_existente["Hora Medicao"].apply(padronizar_hora),
+            format="%Y-%m-%d %H:%M"
+        )
+        df_dados["DataHora"] = pd.to_datetime(
+            df_dados["Data Medicao"] + " " + df_dados["Hora Medicao"].apply(padronizar_hora),
+            format="%Y-%m-%d %H:%M"
+        )       
 
         df_dados = (
             pd.concat([df_existente, df_dados], ignore_index=True)
-            .drop_duplicates("Data Medicao", keep="last")
-            .sort_values("Data Medicao")
+            .drop_duplicates("DataHora", keep="last")
+            .sort_values("DataHora")
         )
-        df_dados["Data Medicao"] = df_dados["Data Medicao"].dt.strftime("%Y-%m-%d")
+        
+        df_dados["Data Medicao"] = df_dados["DataHora"].dt.strftime("%Y-%m-%d")
+
+        # Remover coluna auxiliar
+        df_dados.drop(columns=["DataHora"], inplace=True)
 
     df_dados.to_csv(caminho_csv, index=False, sep=";")
     print(f"\n✅ Dados salvos em: {caminho_csv}")
@@ -192,7 +217,7 @@ def get_inmet_data(
     if process:
         print()
         df = process_data(
-            source=DataSource.INMET_DAILY,
+            source=DataSource.INMET,
             data_path=caminho_csv,
         )
         

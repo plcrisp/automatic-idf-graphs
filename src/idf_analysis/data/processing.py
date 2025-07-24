@@ -20,8 +20,9 @@ import re
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from typing import Literal
 from pathlib import Path
-from datetime import date
+from datetime import date, datetime
 from sklearn.ensemble import RandomForestRegressor
 
 
@@ -115,54 +116,82 @@ def read_csv(path):
 
 
 
-def verification(df):
+def verification(df: pd.DataFrame, frequency: Literal["yearly", "monthly", "daily", "hourly"] = "daily"):
     """
     Verifica a integridade de uma série temporal de dados meteorológicos.
 
     Parâmetros:
-        df (DataFrame): Um DataFrame contendo colunas 'Year', 'Month', 'Day'.
+        df (DataFrame): Deve conter colunas correspondentes à frequência analisada.
+        frequency (str): Frequência da verificação ('yearly', 'monthly', 'daily', 'hourly').
 
-    A função compara o número de dias consecutivos entre a primeira e última data
-    com o número de registros na base. Informa se há lacunas ou se a série está completa.
-    
     Retorna:
-        dict: Um dicionário com o status da verificação e o número de dias faltantes (se houver).
+        dict: Status da verificação e número de períodos faltantes (se houver).
     """
-
-    result = {"status": "", "missing_days": 0}
+    result = {"status": "", "missing": 0}
 
     if df.empty:
         print("\n[INFO] DataFrame está vazio.\n")
         result["status"] = "empty"
         return result
 
-    required_columns = {'Year', 'Month', 'Day'}
-    if not required_columns.issubset(df.columns):
-        print(f"\n[INFO] Colunas obrigatórias ausentes: {required_columns - set(df.columns)}\n")
+    if frequency == "yearly":
+        required_columns = {"Year"}
+    elif frequency == "monthly":
+        required_columns = {"Year", "Month"}
+    elif frequency == "daily":
+        required_columns = {"Year", "Month", "Day"}
+    elif frequency == "hourly":
+        required_columns = {"Year", "Month", "Day", "Hour"}
+    else:
+        raise ValueError("Frequência inválida. Use: 'yearly', 'monthly', 'daily' ou 'hourly'.")
+
+    missing_cols = required_columns - set(df.columns)
+    if missing_cols:
+        print(f"\n[INFO] Colunas obrigatórias ausentes: {missing_cols}\n")
         result["status"] = "missing_columns"
         return result
 
-    # Cria coluna de data e ordena o DataFrame
-    df['Date'] = pd.to_datetime(df[['Year', 'Month', 'Day']])
-    df = df.sort_values('Date').reset_index(drop=True)
+    # Criação da coluna de tempo base
+    if frequency == "yearly":
+        df["Date"] = pd.to_datetime(df["Year"], format="%Y")
+    elif frequency == "monthly":
+        df["Date"] = pd.to_datetime(df[["Year", "Month"]].assign(Day=1))
+    elif frequency == "daily":
+        df["Date"] = pd.to_datetime(df[["Year", "Month", "Day"]])
+    elif frequency == "hourly":
+        df["Date"] = pd.to_datetime(df[["Year", "Month", "Day"]]) + pd.to_timedelta(df["Hour"], unit="h")
 
-    d0 = df['Date'].iloc[0].date()
-    di = df['Date'].iloc[-1].date()
-    expected_days = (di - d0).days + 1
-    actual_days = len(df)
+    df = df.sort_values("Date").drop_duplicates("Date").reset_index(drop=True)
+
+    d0 = df["Date"].iloc[0]
+    di = df["Date"].iloc[-1]
 
     print(f"\n[INFO] Período da série: {d0} até {di}")
-    print(f"[INFO] Dias esperados: {expected_days}")
-    print(f"[INFO] Entradas no DataFrame: {actual_days}\n")
 
-    missing_days = expected_days - actual_days
+    # Gera índice esperado de datas
+    if frequency == "yearly":
+        expected_index = pd.date_range(d0, di, freq="YS")
+    elif frequency == "monthly":
+        expected_index = pd.date_range(d0, di, freq="MS")
+    elif frequency == "daily":
+        expected_index = pd.date_range(d0, di, freq="D")
+    elif frequency == "hourly":
+        expected_index = pd.date_range(d0, di, freq="h")
 
-    if missing_days > 0:
-        print(f"[WARNING] Série incompleta. Dias faltando: {missing_days}\n")
+    expected_count = len(expected_index)
+    actual_count = len(df)
+
+    print(f"[INFO] Períodos esperados: {expected_count}")
+    print(f"[INFO] Entradas no DataFrame: {actual_count}\n")
+
+    missing = expected_count - actual_count
+
+    if missing > 0:
+        print(f"[WARNING] Série incompleta. Períodos faltando: {missing}\n")
         result["status"] = "incomplete"
-        result["missing_days"] = missing_days
-    elif missing_days == 0:
-        print("[OK] Série completa! Nenhum dia faltando.\n")
+        result["missing"] = missing
+    elif missing == 0:
+        print("[OK] Série completa! Nenhum período faltando.\n")
         result["status"] = "complete"
     else:
         print("[ERRO] Número de entradas excede o esperado. Verifique duplicatas ou erros.\n")
@@ -174,55 +203,101 @@ def verification(df):
         
 def set_date(df):
     """
-    Cria uma coluna 'Date' a partir das colunas 'Year', 'Month' e 'Day', define-a como índice e retorna o DataFrame.
+    Cria uma coluna 'Date' a partir de 'Year', 'Month', 'Day' (e opcionalmente 'Hour'),
+    define-a como índice, e preenche intervalos de tempo ausentes com base na resolução.
 
     Parâmetros:
-    df (DataFrame): DataFrame contendo as colunas 'Year', 'Month' e 'Day'.
+    ----------
+    df : pandas.DataFrame
+        DataFrame contendo as colunas 'Year', 'Month', 'Day' e opcionalmente 'Hour'.
 
     Retorna:
-    DataFrame: DataFrame atualizado com a nova coluna 'Date' e o índice configurado.
+    -------
+    df : pandas.DataFrame
+        DataFrame atualizado com índice datetime e colunas reconstruídas.
     """
-    # Cria a coluna 'Date' combinando 'Year', 'Month' e 'Day', ignorando erros em datas inválidas
-    df['Date'] = [date(y, m, d) if pd.notnull(y) and pd.notnull(m) and pd.notnull(d) else pd.NaT
-                  for y, m, d in zip(df['Year'], df['Month'], df['Day'])]
+    has_hour = 'Hour' in df.columns
 
-    # Define 'Date' como índice e retorna o DataFrame atualizado
+    # Criação segura do datetime
+    if has_hour:
+        df['Date'] = [
+            datetime(y, m, d, h) if pd.notnull(y) and pd.notnull(m) and pd.notnull(d) and pd.notnull(h)
+            else pd.NaT
+            for y, m, d, h in zip(df['Year'], df['Month'], df['Day'], df['Hour'])
+        ]
+    else:
+        df['Date'] = [
+            date(y, m, d) if pd.notnull(y) and pd.notnull(m) and pd.notnull(d)
+            else pd.NaT
+            for y, m, d in zip(df['Year'], df['Month'], df['Day'])
+        ]
+
     df.set_index('Date', inplace=True)
-    
-    # Cria uma faixa de datas completa entre a primeira e a última data usando o índice
-    idx = pd.date_range(df.index[0], df.index[-1])
-    
-    # Reindexa o DataFrame para preencher as datas faltantes e recria a coluna 'Date'
-    df = df.reindex(idx)
-    df['Date'] = df.index
 
-    # Preenche as colunas 'Year', 'Month' e 'Day' com os valores corretos
+    # Gera índice contínuo com base na frequência
+    start, end = df.index.min(), df.index.max()
+    freq = 'h' if has_hour else 'D'
+    full_idx = pd.date_range(start=start, end=end, freq=freq)
+
+    # Reindexa e reconstrói as colunas
+    df = df.reindex(full_idx)
+    df['Date'] = df.index
     df['Year'] = df.index.year
     df['Month'] = df.index.month
     df['Day'] = df.index.day
+    if has_hour:
+        df['Hour'] = df.index.hour
 
     return df
 
 
 
-def fill_missing_data(path_main, path_secondary=None, overwrite=False):
+def interpolate_by_frequency(df, frequency: Literal["yearly", "monthly", "daily", "hourly"] = "daily"):
+    """
+    Aplica interpolação em uma série de acordo com a frequência desejada.
+    
+    Parâmetros:
+        df (DataFrame): DataFrame com colunas 'Precipitation', 'Year', 'Month', 'Day', e opcionalmente 'Hour'.
+        frequency (str): 'yearly', 'monthly', 'daily' ou 'hourly'.
+    
+    Retorna:
+        Series: Série interpolada.
+    """
+    if frequency == 'yearly':
+        return df.groupby('Year')['Precipitation'].transform(lambda x: x.interpolate(method='linear'))
+
+    elif frequency == 'monthly':
+        return df.groupby(['Year', 'Month'])['Precipitation'].transform(lambda x: x.interpolate(method='linear'))
+
+    elif frequency == 'daily':
+        return df.groupby('Month')['Precipitation'].transform(lambda x: x.interpolate(method='linear'))
+
+    elif frequency == 'hourly':
+        if 'Hour' not in df.columns:
+            raise ValueError("Coluna 'Hour' necessária para interpolação horária.")
+        return df.groupby(['Year', 'Month', 'Day'])['Precipitation'].transform(lambda x: x.interpolate(method='linear'))
+
+    else:
+        raise ValueError("Frequência inválida. Use 'yearly', 'monthly', 'daily' ou 'hourly'.")
+
+
+
+def fill_missing_data(path_main, path_secondary=None, overwrite=False, frequency: Literal["yearly", "monthly", "daily", "hourly"] = "daily"):
     """
     Preenche os valores faltantes na coluna 'Precipitation' de um DataFrame.
 
-    Se um segundo caminho for fornecido, tenta completar os dados faltantes
-    com base em um modelo de Random Forest treinado com o segundo DataFrame.
-    Caso contrário, aplica interpolação sazonal por mês.
-
-    Se overwrite=True, substitui o arquivo original (path_main) com o novo DataFrame.
+    Usa interpolação por frequência ou Random Forest com base no path_secondary.
 
     Parâmetros:
     ----------
     path_main : str
-        Caminho para o CSV principal com possíveis valores faltantes.
+        Caminho para o CSV principal com valores faltantes.
     path_secondary : str, opcional
-        Caminho para um segundo CSV com dados completos ou com menos faltas.
-    overwrite : bool, opcional (padrão: False)
-        Se True, sobrescreve o arquivo path_main com os dados preenchidos.
+        Caminho para um segundo CSV com dados mais completos.
+    overwrite : bool, opcional
+        Se True, sobrescreve o CSV original.
+    frequency : str
+        Uma entre: 'yearly', 'monthly', 'daily', 'hourly'.
 
     Retorna:
     -------
@@ -234,12 +309,20 @@ def fill_missing_data(path_main, path_secondary=None, overwrite=False):
     if path_secondary:
         df_secondary = set_date(read_csv(path_secondary))
 
-        for df in (df_main, df_secondary):
-            if not {'Year', 'Month', 'Day', 'Precipitation'}.issubset(df.columns):
-                raise ValueError("Os DataFrames devem conter as colunas: Year, Month, Day, Precipitation")
+        # Verificações mínimas
+        required = {'Year', 'Month', 'Day', 'Precipitation'}
+        if not required.issubset(df_main.columns) or not required.issubset(df_secondary.columns):
+            raise ValueError(f"Colunas obrigatórias ausentes: {required}")
 
-        df_main['Key'] = df_main[['Year', 'Month', 'Day']].astype(str).agg('-'.join, axis=1)
-        df_secondary['Key'] = df_secondary[['Year', 'Month', 'Day']].astype(str).agg('-'.join, axis=1)
+        has_hour = frequency == 'hourly' and 'Hour' in df_main.columns and 'Hour' in df_secondary.columns
+
+        # Cria chave única para merge
+        if has_hour:
+            df_main['Key'] = pd.to_datetime(df_main[['Year', 'Month', 'Day', 'Hour']]).dt.strftime('%Y-%m-%d %H:%M')
+            df_secondary['Key'] = pd.to_datetime(df_secondary[['Year', 'Month', 'Day', 'Hour']]).dt.strftime('%Y-%m-%d %H:%M')
+        else:
+            df_main['Key'] = pd.to_datetime(df_main[['Year', 'Month', 'Day']]).dt.strftime('%Y-%m-%d')
+            df_secondary['Key'] = pd.to_datetime(df_secondary[['Year', 'Month', 'Day']]).dt.strftime('%Y-%m-%d')
 
         merged = df_main[['Key', 'Precipitation']].merge(
             df_secondary[['Key', 'Precipitation']],
@@ -250,48 +333,48 @@ def fill_missing_data(path_main, path_secondary=None, overwrite=False):
 
         valid = merged.dropna(subset=['Precipitation_main', 'Precipitation_sec'])
 
-        if len(valid) >= 10:  # Apenas treina se tiver dados suficientes
+        if len(valid) >= 10:
             valid = valid.copy()
             valid['Year'] = pd.to_datetime(valid['Key']).dt.year
             valid['Month'] = pd.to_datetime(valid['Key']).dt.month
             valid['Day'] = pd.to_datetime(valid['Key']).dt.day
+            if has_hour:
+                valid['Hour'] = pd.to_datetime(valid['Key']).dt.hour
 
-            X_train = valid[['Precipitation_sec', 'Year', 'Month', 'Day']]
+            feature_cols = ['Precipitation_sec', 'Year', 'Month', 'Day']
+            if has_hour:
+                feature_cols.append('Hour')
+
+            X_train = valid[feature_cols]
             y_train = valid['Precipitation_main']
 
             model = RandomForestRegressor(n_estimators=100, random_state=42)
             model.fit(X_train, y_train)
 
-            # Prepara os dados ausentes para previsão
             to_predict = merged[merged['Precipitation_main'].isna() & merged['Precipitation_sec'].notna()].copy()
             to_predict['Year'] = pd.to_datetime(to_predict['Key']).dt.year
             to_predict['Month'] = pd.to_datetime(to_predict['Key']).dt.month
             to_predict['Day'] = pd.to_datetime(to_predict['Key']).dt.day
+            if has_hour:
+                to_predict['Hour'] = pd.to_datetime(to_predict['Key']).dt.hour
 
-            X_pred = to_predict[['Precipitation_sec', 'Year', 'Month', 'Day']]
+            X_pred = to_predict[feature_cols]
             merged.loc[to_predict.index, 'Precipitation_main'] = model.predict(X_pred)
 
         else:
-            print("Poucos dados para treinar Random Forest. Usando interpolação sazonal.")
-            interpolated = (
-                df_main.groupby('Month')['Precipitation']
-                .apply(lambda group: group.interpolate(method='linear'))
-            )
-            df_main['Precipitation'] = interpolated.reset_index(level=0, drop=True)
+            print("Poucos dados para treinar Random Forest. Usando interpolação.")
+            interpolated = interpolate_by_frequency(df_main, frequency)
+            df_main['Precipitation'] = interpolated
             return df_main
 
-        # Atualiza os valores de precipitação no df_main
         df_main.set_index('Key', inplace=True)
         merged.set_index('Key', inplace=True)
         df_main['Precipitation'] = merged['Precipitation_main']
         df_main.reset_index(drop=True, inplace=True)
 
     else:
-        interpolated = (
-            df_main.groupby('Month')['Precipitation']
-            .apply(lambda group: group.interpolate(method='linear'))
-        )
-        df_main['Precipitation'] = interpolated.reset_index(level=0, drop=True)
+        interpolated = interpolate_by_frequency(df_main, frequency)
+        df_main['Precipitation'] = interpolated
 
     if overwrite:
         df_main.to_csv(path_main, index=False)
