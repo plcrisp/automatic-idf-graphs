@@ -1,7 +1,41 @@
-[project]
-name = "idf_analysis"
-version = "0.1.0"
-
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "idf_analysis"
+version = "0.1.0"
+description = "A Python library for end-to-end Intensity-Duration-Frequency (IDF) curve analysis, from historical records to future climate projections. Born from an undergraduate scientific research initiative in hydrology."
+authors = [
+    { name = "Pedro Lucas Crisp Pinto", email = "pedrolcrisp@gmail.com" },
+    { name = "Marina Batalini de Macedo", email = "marinamacedo@unifei.edu.br" }
+]
+requires-python = ">=3.9"
+
+dependencies = [
+    "folium",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pymannkendall",
+    "python-dotenv",
+    "questionary",
+    "requests",
+    "scikit-learn",
+    "scipy",
+    "seaborn",
+    "statsmodels",
+    "Unidecode",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/plcrisp/Automatic-IDF-Graphs"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"idf_analysis.resources" = ["*.csv"]
