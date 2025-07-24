@@ -492,13 +492,13 @@ def get_cemaden_data():
         lista_estacoes = obter_estacoes_por_municipio(ESTACOES_URL, meu_token, str(cod_ibge_selecionado))
         if not lista_estacoes: return
         
-        opcoes_estacao = [f"{e.get('codigo', 'S/C')} - {e.get('nome', 'S/N')}" for e in lista_estacoes]
+        opcoes_estacao = [f"{e.get('codestacao', 'S/C')} - {e.get('nome', 'S/N')}" for e in lista_estacoes]
         estacao_selecionada_str = questionary.select(f"Selecione a estação em {cidade_escolhida}:", choices=opcoes_estacao).ask()
         if estacao_selecionada_str is None:
             print("Operação cancelada.")
             return
         
-        estacao_final = next((e for e in lista_estacoes if f"{e.get('codigo', 'S/C')} - {e.get('nome', 'S/N')}" == estacao_selecionada_str), None)
+        estacao_final = next((e for e in lista_estacoes if f"{e.get('codestacao', 'S/C')} - {e.get('nome', 'S/N')}" == estacao_selecionada_str), None)
 
         # Etapa 5: Coletar datas e agendar
         print("\n--- Agendamento de Dados Históricos ---")
@@ -512,13 +512,10 @@ def get_cemaden_data():
             print("❌ Formato de data inválido. Por favor, use DD/MM/AAAA.")
 
         data_inicio_obj = datetime.strptime(data_inicio_br, "%d/%m/%Y")
-        data_maxima_obj = data_inicio_obj + timedelta(days=365)
-        data_maxima_str = data_maxima_obj.strftime("%d/%m/%Y")
 
         print("\n" + "-"*60)
         print("ℹ️ INFORMAÇÕES IMPORTANTES SOBRE O PERÍODO DE CONSULTA:")
         print(f"   - A data final não pode ser anterior a {data_inicio_br}.")
-        print(f"   - O período máximo é de 1 ano (data final máxima: {data_maxima_str}).")
         print(f"   - Se precisar de um período maior, você pode rodar o script")
         print(f"     novamente para a mesma estação. Os dados serão integrados automaticamente.")
         print("-" * 60, "\n")
@@ -530,16 +527,15 @@ def get_cemaden_data():
             if not data_fim_api: print("❌ Formato de data inválido. Por favor, use DD/MM/AAAA."); continue
             data_fim_obj = datetime.strptime(data_fim_br, "%d/%m/%Y")
             if data_fim_obj < data_inicio_obj: print(f"❌ Erro: A data final ({data_fim_br}) não pode ser anterior à data inicial ({data_inicio_br})."); continue
-            if (data_fim_obj - data_inicio_obj).days > 365: print(f"❌ Erro: O período selecionado excede o limite de 1 ano."); continue
             break
 
         data_inicio_api = converter_data_br_para_api(data_inicio_br, 'inicio')
         params_agendamento = {
-            "arquivo": "CSV", "codestacao": estacao_final.get('codigo'),
-            "codibge": cod_ibge_selecionado, "datafim": data_fim_api,
-            "datainicio": data_inicio_api, "rede": "11", "sensor": "10",
-            "uf": uf_escolhida,
+            "arquivo": "CSV", "codestacao": estacao_final.get('codestacao'),
+            "datafim": data_fim_api, "datainicio": data_inicio_api, 
+            "rede": "11", "sensor": "10","uf": uf_escolhida,
         }
+        
         
         job_id = agendar_requisicao_dados(AGENDAMENTO_URL, meu_token, params_agendamento)
         
