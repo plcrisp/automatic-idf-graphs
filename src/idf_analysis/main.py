@@ -1,5 +1,5 @@
 # Importações dos módulos utilitários
-from .data.api.inmet import get_inmet_data
+from .data.api.inmet import get_inmet_data, load_inmet_station_parameters
 from .data.api.cemaden import get_cemaden_data, finalizar_requisicao_por_id
 from .data.reader import process_data, DataSource
 from .analysis.projection.eqm import eqm_downscaling
@@ -13,14 +13,15 @@ aggregate_to_csv(df=cemaden_santana, name='cemaden_santana', directory='results/
 inmet_santana = process_data(source=DataSource.INMET_DAILY, data_path='./datasets/INMET_santana/sp-1961-2025.csv')
 aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inmet_santana')
 '''
-
+#finalizar_requisicao_por_id(53956, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
 #inmet = get_inmet_data()
+#finalizar_requisicao_por_id(53955, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
+finalizar_requisicao_por_id(53794, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
 #cemaden = get_cemaden_data()
-
-eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
+#eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
 
 #finalizar_requisicao_por_id(49444, {'codestacao': '120070801A', 'id_tipoestacao': 1, 'nome': 'Cageacre'}, 'XAPURI')
-
+#finalizar_requisicao_por_id(53605, {'codestacao': '350570802A', 'id_tipoestacao': 1, 'nome': 'Parque Imperial'}, 'BARUERI')
 # process_precipitation_series(file_names=['results/cemaden_santana/cemaden_santana_daily.csv','results/inmet_santana/inmet_santana_daily.csv'])
  
 '''
