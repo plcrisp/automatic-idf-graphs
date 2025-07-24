@@ -13,42 +13,44 @@ import os
 
 
 
-def distribution_plot_df(df, show_max=False):
+def distribution_plot_df(df, show_max=False, ax=None, display=True):
     """
     Gera um gráfico de densidade dos dados de precipitação 
     a partir de um DataFrame, com a opção de exibir o maior valor no gráfico.
 
     Parâmetros:
-    df (DataFrame): Um DataFrame contendo uma coluna 'Precipitation' 
-                    com os dados de precipitação.
-    show_max (bool): Se True, exibe o maior valor de precipitação no gráfico.
+    - df (DataFrame): Um DataFrame contendo a coluna 'Precipitation'.
+    - show_max (bool): Se True, exibe o maior valor de precipitação no gráfico.
+    - ax (matplotlib.axes.Axes): Eixo para desenhar o gráfico. Se None, cria um novo.
+    - display (bool): Se True, exibe o gráfico. Se False, apenas monta (para uso em subplot).
 
     Retorna:
-    None: Exibe o gráfico de densidade.
+    - ax (matplotlib.axes.Axes): O eixo com o gráfico plotado.
     """
-    
-    # Remove valores ausentes da coluna 'Precipitation'
+
     df = df.dropna(subset=['Precipitation'])
-    
-    # Gera o gráfico de densidade
-    sns.kdeplot(df['Precipitation'], color='skyblue', fill=True)
-    
-    # Se show_max for True, encontra e exibe o maior valor
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+    sns.kdeplot(df['Precipitation'], color='skyblue', fill=True, ax=ax)
+
     if show_max:
         max_value = df['Precipitation'].max()
-        plt.annotate(f'Máximo: {max_value} mm', 
-                     xy=(0.67, 0.9), 
-                     xycoords='axes fraction',
-                     fontsize=9, color='grey', weight='bold', 
-                     bbox=dict(facecolor='white', edgecolor='grey', boxstyle='round,pad=1'))
-    
-    # Configurações do gráfico
-    plt.title('Distribuição de Precipitação')
-    plt.xlabel('Precipitação (mm)')
-    plt.ylabel('Densidade')
-    
-    # Exibe o gráfico
-    plt.show()
+        ax.annotate(f'Máximo: {max_value} mm',
+                    xy=(0.67, 0.9), 
+                    xycoords='axes fraction',
+                    fontsize=9, color='grey', weight='bold',
+                    bbox=dict(facecolor='white', edgecolor='grey', boxstyle='round,pad=1'))
+
+    ax.set_title('Distribuição de Precipitação')
+    ax.set_xlabel('Precipitação (mm)')
+    ax.set_ylabel('Densidade')
+
+    if display:
+        plt.show()
+
+    return ax
     
 
 
