@@ -1,115 +1,151 @@
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
+from typing import Literal, List, Tuple, Optional, Dict
+import pandas as pd
 
 from ...data.processing import verification, fill_missing_data, read_csv, remove_outliers_from_max
 from ...core.correlation import left_join_precipitation
 
 
-def calculate_p90(df):
+def p90(df, ax=None, display=True, show_p90=True):
     """
-    Calcula o percentil de 90% (P90) para valores de precipitação, ou seja, o valor que é excedido em apenas 10% das observações.
-    Também plota o gráfico da probabilidade acumulada de não excedência em função da precipitação.
+    Plota o gráfico da probabilidade acumulada de não excedência (CDF)
+    com base nos dados de precipitação, com a opção de destacar o valor P90.
 
     Parâmetros:
-    df (pd.DataFrame): DataFrame com uma coluna 'Precipitation' contendo valores de precipitação.
+    - df (pd.DataFrame): DataFrame com uma coluna 'Precipitation'.
+    - ax (matplotlib.axes.Axes): Eixo para desenhar o gráfico. Se None, cria um novo.
+    - display (bool): Se True, exibe o gráfico com plt.show().
+    - show_p90 (bool): Se True, destaca o valor do percentil 90% (P90).
 
     Retorna:
-    float: O valor de precipitação correspondente ao percentil de 90% (P90).
+    - Tuple[float, matplotlib.axes.Axes]: Valor P90 e eixo com o gráfico plotado.
     """
-    
-    # Filtra e ordena os valores de precipitação, excluindo zeros
-    df = df[['Precipitation']].query('Precipitation != 0').sort_values('Precipitation').reset_index(drop=True)
 
-    # Calcula a probabilidade de não excedência para cada valor em porcentagem
+    # Prepara os dados
+    df = df[['Precipitation']].query('Precipitation != 0').sort_values('Precipitation').reset_index(drop=True)
     df['Probability'] = (df.index + 1) / len(df) * 100
-    
-    # Filtra o valor de precipitação onde a probabilidade de não excedência é aproximadamente 90%
+
+    # Calcula o valor P90
     p90_value = df.loc[df['Probability'] >= 90, 'Precipitation'].iloc[0]
 
-    # Plota o gráfico da probabilidade acumulada de não excedência
-    sns.lineplot(x='Probability', y='Precipitation', data=df, color='black')
-    plt.ylabel('Precipitation (mm)', fontsize=12)
-    plt.xlabel('Probability (%)', fontsize=12)
-    plt.title("Probability of Non-Exceedence")
-    plt.show()
-    
-    return p90_value
+    # Prepara o eixo
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+    # Plota a CDF
+    sns.lineplot(x='Probability', y='Precipitation', data=df, ax=ax, color='black')
+    ax.set_ylabel('Precipitação (mm)')
+    ax.set_xlabel('Probabilidade (%)')
+    ax.set_title('Probabilidade de Não-Excedência')
+
+    # Destaca o P90
+    if show_p90:
+        ax.axhline(p90_value, color='red', linestyle='--', linewidth=1)
+        ax.annotate(f'P90 = {p90_value:.2f} mm',
+                    xy=(91, p90_value),
+                    xytext=(92, p90_value + 2),
+                    fontsize=9,
+                    color='red',
+                    arrowprops=dict(arrowstyle='->', color='red'),
+                    bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.2'))
+
+    # Exibe o gráfico se necessário
+    if display:
+        plt.show()
+
+    return p90_value, ax
 
 
 
-def max_annual_precipitation(df, name_file, output_dir='Results'):
+def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Literal['daily', 'hourly'] = 'daily'):
     """
-    Calcula o valor máximo de precipitação anual para cada ano e remove os outliers.
-    Em seguida, salva o resultado em um arquivo CSV no diretório especificado.
+    Calcula o valor máximo de precipitação anual e remove outliers.
+    Para dados horários, soma a precipitação por dia antes de calcular os máximos.
 
     Parâmetros:
-    - df (DataFrame): DataFrame com colunas 'Year' e 'Precipitation'.
-    - name_file (str): Nome base do arquivo de saída.
-    - output_dir (str): Diretório onde o arquivo CSV será salvo (padrão: 'Results').
+    - df (DataFrame): Deve conter colunas 'Year', 'Precipitation', e dependendo da frequência: 'Month', 'Day', 'Hour'.
+    - name_file (str): Nome base do arquivo de saída (sem extensão).
+    - output_dir (str): Diretório onde o CSV será salvo.
+    - frequency (str): 'daily' (espera valores diários) ou 'hourly' (soma por dia antes de agrupar por ano).
 
     Retorna:
     - DataFrame com os valores máximos de precipitação anual, excluindo outliers.
     """
-    # Remover linhas com valores nulos
+    print(f"\n[INFO] Calculando máximos anuais para '{name_file}' com frequência: '{frequency}'")
+
     df = df.dropna()
-    
-    # Agrupar por ano e calcular o valor máximo de precipitação anual
-    df_new = df.groupby(['Year'])['Precipitation'].max().reset_index()
-    
-    # Remover outliers usando a função auxiliar
-    df_new = remove_outliers_from_max(df_new)
-    
-    # Garantir que o diretório de saída exista
+
+    if frequency == 'hourly':
+        required_cols = {'Year', 'Month', 'Day', 'Precipitation'}
+        if not required_cols.issubset(df.columns):
+            print(f"[ERRO] Colunas necessárias ausentes para frequência 'hourly': {required_cols}")
+            return
+
+        # Agrupar por data (Year, Month, Day) e somar a precipitação diária
+        df_daily = df.groupby(['Year', 'Month', 'Day'], as_index=False)['Precipitation'].sum()
+        print(f"[INFO] Dados horários agregados em {len(df_daily)} dias.")
+    elif frequency == 'daily':
+        df_daily = df.copy()
+        if 'Month' not in df_daily.columns or 'Day' not in df_daily.columns:
+            print("[WARNING] Colunas 'Month' e 'Day' ausentes nos dados diários. OK se não for necessário.")
+    else:
+        print("[ERRO] Frequência inválida. Use 'daily' ou 'hourly'.")
+        return
+
+    # Agrupar por ano e pegar o valor máximo
+    df_max = df_daily.groupby('Year')['Precipitation'].max().reset_index()
+    print(f"[INFO] Máximos anuais calculados para {df_max.shape[0]} anos.")
+
+    # Remoção de outliers
+    df_clean = remove_outliers_from_max(df_max)
+    print(f"[INFO] Após remoção de outliers: {df_clean.shape[0]} anos restantes.")
+
     os.makedirs(output_dir, exist_ok=True)
-    
-    # Caminho completo do arquivo
     output_path = os.path.join(output_dir, f'max_daily_{name_file}.csv')
-    
-    # Salvar o resultado em um arquivo CSV
-    df_new.to_csv(output_path, index=False)
-    
-    print(f"Arquivo salvo em: {output_path}")
-    return df_new
+    df_clean.to_csv(output_path, index=False)
+
+    print(f"[OK] Arquivo salvo em: {output_path}\n")
+    return df_clean
 
 
 
-def process_precipitation_series(file_names):
+def process_precipitation_series(
+    file_names: List[str],
+    frequency: Literal["daily", "hourly"] = "daily",
+    plot: bool = True,
+    return_fig: bool = False
+) -> Tuple[pd.DataFrame, Optional[Tuple[plt.Figure, List[plt.Axes]]]]:
     """
-    Processa séries temporais de precipitação, realizando:
-
-    1. Leitura e verificação da integridade das séries (presença de dias faltantes).
-    2. Preenchimento de lacunas (gaps) com base na seguinte lógica:
-       - Se ao menos um dataset estiver completo, ele será usado como referência 
-         para preencher os datasets incompletos.
-       - Se todos estiverem incompletos, cada um será preenchido individualmente.
-    3. União das séries em um único DataFrame, com cálculo da precipitação média diária.
-    4. Cálculo das somas acumuladas (precipitação acumulada) para cada estação e para a média.
-    5. Geração de gráficos de dupla massa (dispersão entre acumulado individual e acumulado médio).
+    Processa séries temporais de precipitação e retorna o DataFrame final,
+    com opção de plotar os gráficos de dupla massa ou retorná-los.
 
     Parâmetros:
-        file_names (list): Lista com os nomes dos arquivos (sem extensão).
+    - file_names: Lista com os nomes dos arquivos CSV.
+    - frequency: Frequência dos dados ("daily" ou "hourly").
+    - plot: Se True, gera os gráficos com visualização padrão.
+    - return_fig: Se True, retorna fig e axes para customização posterior.
 
-    Retorno:
-        None. Exibe informações no console e gera gráficos com os dados processados.
+    Retorna:
+    - df: DataFrame com séries unidas e colunas de precipitação acumulada.
+    - (fig, axes): Se return_fig=True, retorna objetos de plotagem.
     """
 
     def load_and_verify(file_name):
         print(f"[INFO] Lendo e verificando: {file_name}")
         df = read_csv(file_name)
-        result = verification(df)
+        result = verification(df, frequency=frequency)
         return df, result["status"]
 
-    # ETAPA 1: LEITURA E VERIFICAÇÃO DE GAPS
     verification_results = {}
-    dataframes = {}
+    dataframes: Dict[str, pd.DataFrame] = {}
 
     for name in file_names:
         df, status = load_and_verify(name)
         dataframes[name] = df
         verification_results[name] = status
 
-    # ETAPA 2: PREENCHIMENTO DE GAPS
     complete_paths = [name for name, status in verification_results.items() if status == 'complete']
     incomplete_paths = [name for name, status in verification_results.items() if status == 'incomplete']
 
@@ -118,42 +154,51 @@ def process_precipitation_series(file_names):
         print(f"[INFO] Usando '{reference}' como referência para preenchimento.")
         for name in incomplete_paths:
             print(f"[INFO] Preenchendo '{name}' com base em '{reference}'...")
-            dataframes[name] = fill_missing_data(path_main=name, path_secondary=reference, overwrite=False)
+            dataframes[name] = fill_missing_data(path_main=name, path_secondary=reference, frequency=frequency, overwrite=False)
     elif incomplete_paths:
         print("[INFO] Nenhum dataset completo encontrado. Preenchendo todos individualmente...")
         for name in incomplete_paths:
             print(f"[INFO] Preenchendo '{name}' individualmente...")
-            dataframes[name] = fill_missing_data(path_main=name)
+            dataframes[name] = fill_missing_data(path_main=name, frequency=frequency)
     else:
-        print("\n[INFO] Todos os datasets estão completos. Nenhum preenchimento necessário.\n")
+        print("[INFO] Todos os datasets estão completos.")
 
-    # ETAPA 3: UNIÃO E PROCESSAMENTO
-    print("[INFO] Unindo séries e calculando média diária...")
+    print(f"[INFO] Unindo séries e calculando média {'horária' if frequency == 'hourly' else 'diária'}...")
+
     df = left_join_precipitation(*dataframes.values())
-    df.columns = ['Date'] + [f'P_{name}' for name in file_names]
-
+    df.columns = ['Date'] + [f"P_{i}" for i in range(len(file_names))]  # P_0, P_1, ...
     df = df.dropna()
     df['P_average'] = df.iloc[:, 1:].mean(axis=1)
 
     for col in df.columns[1:]:
         df[f'Pacum_{col}'] = df[col].fillna(0).cumsum()
 
-    # ETAPA 4: PLOTAGEM
-    print("[INFO] Gerando gráficos de dupla massa...")
-    sns.set_context("talk", font_scale=0.8)
-    fig, axes = plt.subplots(1, len(file_names), figsize=(20, 6), sharey=True)
+    fig, axes = None, []
 
-    for ax, name in zip(axes, file_names):
-        sns.scatterplot(
-            x="Pacum_P_average",
-            y=f"Pacum_P_{name}",
-            data=df,
-            ax=ax
-        )
-        ax.set_xlabel("Média Pacum (mm)")
-        ax.set_ylabel(f"Pacum {name} (mm)")
-        ax.set_title(f"Dispersão de {name}")
+    if plot or return_fig:
+        print("[INFO] Gerando gráficos de dupla massa...")
+        sns.set_context("talk", font_scale=0.8)
+        fig, axes = plt.subplots(1, len(file_names), figsize=(6 * len(file_names), 5), sharey=True)
 
-    plt.tight_layout()
-    plt.show()
-    print("[INFO] Processamento concluído.")
+        if len(file_names) == 1:
+            axes = [axes]
+
+        for i, ax in enumerate(axes):
+            sns.scatterplot(
+                x="Pacum_P_average",
+                y=f"Pacum_P_{i}",
+                data=df,
+                ax=ax,
+                alpha=0.5,
+                color='steelblue'
+            )
+            ax.set_xlabel("Média Pacum (mm)")
+            ax.set_ylabel(f"Pacum Estação {i}")
+            ax.set_title(f"Dupla Massa - Estação {i}")
+
+        plt.tight_layout()
+
+        if plot:
+            plt.show()
+
+    return (df, (fig, axes) if return_fig else None)
