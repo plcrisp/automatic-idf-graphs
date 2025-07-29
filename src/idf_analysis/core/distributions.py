@@ -396,7 +396,7 @@ def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory
     else:
         if disag_factor is None:
             raise ValueError("O parâmetro 'disag_factor' deve ser fornecido quando 'duration' é especificado.")
-        file_path = f'{directory}/max_subdaily_{name_file}{disag_factor}.csv'
+        file_path = f'{directory}/max_subdaily_{name_file}_{disag_factor}.csv'
         column_name = duration
 
     try:

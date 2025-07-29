@@ -170,6 +170,9 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None, sh
         # Agrupa por estação, ano, mês, dia e hora e soma as precipitações
         CEMADEN_df = CEMADEN_df.groupby(['Site', 'Year', 'Month', 'Day', 'Hour'], as_index=False).agg({'Precipitation': 'sum'})
         
+        # Arredonda os valores de precipitação para 2 casas decimais
+        CEMADEN_df['Precipitation'] = CEMADEN_df['Precipitation'].round(2)
+        
         if show_station_counts:
             print_station_record_counts(CEMADEN_df)
             
