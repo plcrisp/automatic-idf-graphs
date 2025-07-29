@@ -21,6 +21,7 @@ Este código é útil para análise hidrológica, auxiliando na preparação de 
 import pandas as pd
 from enum import Enum
 from importlib import resources
+from typing import Literal
 
 
 
@@ -33,49 +34,52 @@ class DisaggregationScenario(Enum):
 
 def aggregate_precipitation(df, interval, dt_min=False):
     """
-    Agrega os dados de precipitação em intervalos especificados.
+    Agrega os dados de precipitação em janelas móveis reais (rolling),
+    respeitando a data/hora, com intervalos em horas ou minutos.
 
     Parâmetros:
-    df (DataFrame): Um DataFrame contendo uma coluna 'Precipitation' 
-                    com os dados de precipitação, indexados por tempo.
-    interval (int): O intervalo de agregação desejado:
-                    - Se `dt_min` for None, considera 'interval' em horas.
-                    - Se `dt_min` for True, considera 'interval' em minutos.
-    dt_min (int, opcional): A resolução temporal dos dados em minutos. 
-                            Necessário se 'interval' for em minutos.
+    - df (DataFrame): Deve conter colunas 'Year', 'Month', 'Day', 'Hour' e opcionalmente 'Minute'.
+    - interval (int): Intervalo desejado de agregação (em horas ou minutos).
+    - dt_min (int or False): Resolução temporal dos dados (ex: 5, 10, 60). 
+                             Se False, assume dados horários (60 min).
 
     Retorna:
-    list: Uma lista contendo as somas de precipitação para cada intervalo 
-          especificado.
+    - List[float]: Lista de totais de precipitação por janela móvel.
     """
     
-    # Verifica se o DataFrame contém a coluna 'Precipitation'
+    df = df.copy()
+
+    # Verificação básica
     if 'Precipitation' not in df.columns:
-        raise ValueError("O DataFrame deve conter uma coluna 'Precipitation'.")
-    
-    # Remove valores ausentes da coluna 'Precipitation'
-    df = df[['Precipitation']].dropna()
-    
-    # Lista para armazenar os resultados acumulados
-    acum_list = []
+        raise ValueError("O DataFrame deve conter a coluna 'Precipitation'.")
 
-    if not dt_min:
-        # Caso padrão: agregação em horas
-        n = interval  # Intervalo em horas
-        for i in range(len(df) - n + 1):
-            # Soma os valores de 'Precipitation' nas 'n' horas atuais
-            acum = df.iloc[i:n + i]['Precipitation'].sum()
-            acum_list.append(acum)
-    
+    # Construir índice temporal
+    if dt_min:
+        if 'Minute' not in df.columns:
+            df['Minute'] = 0
+        df['Date'] = pd.to_datetime(df[['Year', 'Month', 'Day', 'Hour', 'Minute']])
     else:
-        # Caso em que o intervalo é em minutos
-        n = interval // dt_min  # Calcula quantas entradas de dados devem ser somadas
-        for i in range(len(df) - n + 1):
-            # Soma os valores de 'Precipitation' nas 'n' entradas atuais
-            acum = df.iloc[i:n + i]['Precipitation'].sum()
-            acum_list.append(acum)
+        df['Date'] = pd.to_datetime(df[['Year', 'Month', 'Day']]) + pd.to_timedelta(df['Hour'], unit='h')
 
-    return acum_list
+    df = df[['Date', 'Precipitation']].dropna().sort_values('Date').set_index('Date')
+
+    # Tamanho da janela em unidades temporais (ex: 6 valores para 6h se dt_min=False)
+    if not dt_min:
+        window_size = interval  # horas
+        freq = 'h'
+    else:
+        window_size = interval // dt_min
+        freq = f'{dt_min}min'
+
+    # Verifica se o índice é regular (apenas avisa)
+    expected = pd.date_range(df.index.min(), df.index.max(), freq=freq)
+    if len(expected) != len(df):
+        print(f"[WARNING] Série irregular ou com buracos: {len(df)} observações vs {len(expected)} esperadas")
+
+    # Rolling sum com janela deslizante real
+    rolling_sum = df['Precipitation'].rolling(window=window_size, min_periods=window_size).sum().dropna()
+
+    return rolling_sum.tolist()
 
 
 
@@ -108,7 +112,14 @@ def get_disaggregation_factors(var_value: float) -> pd.DataFrame:
 
 
 
-def get_subdaily_from_disaggregation_factors(df, scenario: DisaggregationScenario, name_file: str,var_value: float = 0.2, directory='Results'):
+def get_subdaily_from_disaggregation_factors(
+    df,
+    scenario: DisaggregationScenario,
+    name_file: str,
+    var_value: float = 0.2,
+    output_dir='Results',
+    frequency: Literal["daily", "hourly"] = "daily",
+):
     """
     Calcula os valores subdiários de precipitação baseados em fatores de desagregação.
 
@@ -125,12 +136,15 @@ def get_subdaily_from_disaggregation_factors(df, scenario: DisaggregationScenari
         Valor usado para ajustar os cenários úmido e seco (ex.: 0.1, 0.2, 0.3).
     name_file : str
         Nome base do arquivo a ser salvo (sem extensão).
-    directory : str
+    output_dir : str
         Diretório onde os resultados serão salvos.
+    frequency : str
+        "daily" para usar coluna 'Precipitation' e intervalos minutais (< 60 min),
+        "subdaily" para usar coluna 'Max_24h' e incluir todos os intervalos (minutais e horários).
 
     Retorna:
     -------
-    None: Salva um CSV com os valores subdiários calculados.
+    DataFrame: O DataFrame com colunas desagregadas adicionadas.
     """
     df_subdaily = df.copy()
     df_disagreg_factors = get_disaggregation_factors(var_value)
@@ -144,9 +158,21 @@ def get_subdaily_from_disaggregation_factors(df, scenario: DisaggregationScenari
     else:
         raise ValueError("Cenário inválido.")
 
-    intervals = [5, 10, 15, 20, 25, 30, 60, 360, 480, 600, 720, 1440]
-    col_name = f'CETESB_{type_tag}'
+    # Definir coluna de referência baseada na frequência
+    if frequency == "daily":
+        reference_col = 'Precipitation'
+        intervals = [5, 10, 15, 20, 25, 30]  # Apenas subdiários
+    elif frequency == "hourly":
+        reference_col = 'Max_24h'
+        intervals = [5, 10, 15, 20, 25, 30, 60, 360, 480, 600, 720, 1440]  # Todos
+    else:
+        raise ValueError("Frequência inválida. Use 'daily' ou 'hourly'.")
 
+    # Verificar se a coluna de referência existe
+    if reference_col not in df_subdaily.columns:
+        raise ValueError(f"Coluna '{reference_col}' não encontrada no DataFrame para frequência '{frequency}'.")
+
+    col_name = f'CETESB_{type_tag}'
     if col_name not in df_disagreg_factors.columns:
         raise ValueError(f"Coluna {col_name} não encontrada em df_disagreg_factors.")
 
@@ -154,13 +180,13 @@ def get_subdaily_from_disaggregation_factors(df, scenario: DisaggregationScenari
         if i < len(df_disagreg_factors):
             factor = df_disagreg_factors[col_name].iloc[i]
             column_name = f'Max_{interval}min' if interval < 60 else f'Max_{interval // 60}h'
-            df_subdaily[column_name] = (df_subdaily['Precipitation'] * factor).round(2)
+            df_subdaily[column_name] = (df_subdaily[reference_col] * factor).round(2)
         else:
-            print(f"Intervalo {interval} não encontrado em fatores de desagregação.")
+            print(f"[WARNING] Intervalo {interval} não encontrado em fatores de desagregação.")
 
-    output_path = f'{directory}/max_subdaily_{name_file}_{type_tag}.csv'
+    output_path = f'{output_dir}/max_subdaily_{name_file}_{type_tag}.csv'
     df_subdaily.to_csv(output_path, index=False)
-    print(f'Resultado salvo em {output_path}')
+    print(f'[OK] Resultado salvo em: {output_path}')
     return df_subdaily
 
 
