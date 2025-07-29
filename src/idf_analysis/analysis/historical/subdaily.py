@@ -1,11 +1,12 @@
 import pandas as pd
+import os
+
 from .intervals import aggregate_precipitation
 
-def get_subdaily_extremes(df, interval, dt_min=False, return_max_only=True):
+def get_subdaily_extremes(df, interval, dt_min=False):
     """
-    Calcula os valores máximos e mínimos de precipitação acumulada em intervalos 
-    especificados para cada ano presente em um DataFrame. Se return_max_only for True, 
-    retorna apenas os máximos.
+    Calcula os valores máximos de precipitação acumulada em intervalos 
+    especificados para cada ano presente em um DataFrame.
 
     Parâmetros:
     df (DataFrame): Um DataFrame que deve conter, pelo menos, uma coluna 'Year' 
@@ -27,7 +28,6 @@ def get_subdaily_extremes(df, interval, dt_min=False, return_max_only=True):
     
     # Inicializa listas para armazenar os máximos e mínimos subdiários
     max_subdaily_list = []
-    min_subdaily_list = []
 
     # Itera sobre cada ano para calcular os extremos de precipitação acumulada
     for year in years_list:
@@ -40,84 +40,80 @@ def get_subdaily_extremes(df, interval, dt_min=False, return_max_only=True):
         else:
             subdaily_list = aggregate_precipitation(df_new, interval, dt_min)
 
-        # Adiciona o máximo e mínimo encontrados às respectivas listas
-        max_subdaily_list.append(max(subdaily_list).round(2))
-        min_subdaily_list.append(min(subdaily_list).round(2))
+        # Adiciona o máximo encontrado à lista
+        max_subdaily_list.append(round(max(subdaily_list), 2))
 
     # Cria um DataFrame resultante com os anos
-    if return_max_only:
-        df_result = pd.DataFrame({
-            'Year': years_list,
-            f'Max_{interval}{"h" if dt_min is None else "min"}': max_subdaily_list  # Apenas máximos
-        })
-    else:
-        df_result = pd.DataFrame({
-            'Year': years_list,
-            f'Max_{interval}{"h" if dt_min is None else "min"}': max_subdaily_list,  # Máximos
-            f'Min_{interval}{"h" if dt_min is None else "min"}': min_subdaily_list   # Mínimos
-        })
+    df_result = pd.DataFrame({
+        'Year': years_list,
+        f'Max_{interval}{"h" if dt_min is False else "min"}': max_subdaily_list
+    })
 
     return df_result
 
 
 
-def get_max_subdaily_table(name_file, directory='Results', dt_min=False):
+def get_max_subdaily_table(df, name_file='output', dt_min=False, output_dir='Results'):
     """
     Calcula os máximos de precipitação acumulada em intervalos subdiários 
-    e salva os resultados em um arquivo CSV. O cálculo pode ser realizado 
-    para dados horários ou de minutos, dependendo da presença do parâmetro dt_min.
+    a partir de um DataFrame, e salva os resultados em um arquivo CSV.
 
     Parâmetros:
-    name_file (str): Nome do arquivo sem extensão que contém dados de precipitação.
-    directory (str): Diretório onde os arquivos estão localizados e onde o resultado será salvo.
-    dt_min (int, opcional): A resolução temporal dos dados em minutos. Necessário se os dados forem em minutos.
+        df (DataFrame): Dados de entrada com colunas 'Year', 'Precipitation', 
+                        e colunas de tempo adequadas (Month, Day, Hour, Minute).
+        name_file (str): Nome base do arquivo de saída (sem extensão).
+        dt_min (int, opcional): Resolução temporal em minutos (ex: 5, 10). 
+                                Se False, assume dados horários.
+        output_dir (str): Diretório onde o arquivo CSV será salvo.
 
     Retorna:
-    None: Salva um arquivo CSV contendo os máximos acumulados por intervalo.
+        DataFrame: Tabela com máximos acumulados por intervalo.
     """
-    print('Getting maximum subdaily...')
     
-    # Lê o arquivo CSV contendo dados
+    print(f"\n[INFO] Iniciando cálculo de máximos subdiários para: '{name_file}'")
+
     if not dt_min:
-        df = pd.read_csv(f'{directory}/{name_file}_hourly.csv')
-        # Lista dos intervalos em horas
         intervals = [1, 3, 6, 8, 10, 12, 24]
+        print(f"[INFO] Dados considerados como horários. Intervalos: {intervals}h")
     else:
-        df = pd.read_csv(f'{directory}/{name_file}_min.csv')
-        # Lista dos intervalos em minutos
         intervals = [5, 10, 15, 20, 25, 30]
+        print(f"[INFO] Dados considerados como minutais. Intervalos: {intervals}min")
 
-    # Cria um DataFrame inicial para armazenar os resultados
+    if df.empty:
+        print(f"[ERRO] DataFrame vazio fornecido. Encerrando.")
+        return
+
     df_final = pd.DataFrame({'Year': df['Year'].unique()})
+    
+    print("[INFO] Calculando máximos para cada intervalo...")
 
-    # Calcula e mescla os máximos para cada intervalo
     for interval in intervals:
         if not dt_min:
             max_subdaily = get_subdaily_extremes(df, interval)
-            print(f'{interval}h done!')
+            print(f"[OK] Intervalo {interval}h concluído.")
         else:
-            max_subdaily = get_subdaily_extremes(df, interval, dt_min)
-            print(f'{interval}min done!')
-        
-        # Mescla os resultados no DataFrame final
+            max_subdaily = get_subdaily_extremes(df, interval, dt_min=dt_min)
+            print(f"[OK] Intervalo {interval}min concluído.")
+
         df_final = df_final.merge(max_subdaily, on='Year', how='inner')
 
-    # Exibe o DataFrame final
-    print('\n', df_final, '\n')
-
-    # Salva o DataFrame final em um arquivo CSV
-    if not dt_min:
-        df_final.to_csv(f'{directory}/max_subdaily_{name_file}.csv', index=False)
-    else:
-        df_final.to_csv(f'{directory}/max_subdaily_min_{name_file}.csv', index=False)
-
-    print('Done!')
+    # Criação de diretório (caso não exista)
+    os.makedirs(output_dir, exist_ok=True)
     
+    output_path = (
+        f'{output_dir}/max_subdaily_{name_file}.csv' if not dt_min
+        else f'{output_dir}/max_subdaily_min_{name_file}.csv'
+    )
+
+    df_final.to_csv(output_path, index=False)
+    print(f"\n[OK] Resultados salvos em: {output_path}")
+    print("[INFO] Cálculo de máximos subdiários finalizado com sucesso.\n")
+
     return df_final
     
     
 
-def generate_complete_subdaily_table(name_file, directory='Results'):
+def generate_complete_subdaily_table(df, name_file='output', directory='Results'):
     """
     Executa o pipeline completo para gerar e mesclar os máximos de precipitação acumulada 
     em intervalos subdiários (minutos e horas), salvando o resultado final em um CSV.
@@ -138,10 +134,10 @@ def generate_complete_subdaily_table(name_file, directory='Results'):
     print('Iniciando geração da tabela completa de extremos subdiários...\n')
 
     # Geração para dados em minutos
-    df_min = get_max_subdaily_table(name_file, directory=directory, dt_min=True)
+    df_min = get_max_subdaily_table(df, dt_min=True)
 
     # Geração para dados horários
-    df_hour = get_max_subdaily_table(name_file, directory=directory, dt_min=False)
+    df_hour = get_max_subdaily_table(df, dt_min=False)
 
     # Mesclagem dos dois resultados
     df_complete = df_min.merge(df_hour, on='Year', how='inner')
