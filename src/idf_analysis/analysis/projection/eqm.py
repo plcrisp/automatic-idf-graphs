@@ -4,7 +4,7 @@ import os
 from sklearn.metrics import r2_score
 
 from .baseline_analysis import prepare_data_pair, prepare_future_data
-from ...analysis.historical.extremes import max_annual_precipitation
+from ...analysis.historical.validation import max_annual_precipitation
 from ...analysis.historical.intervals import get_subdaily_from_disaggregation_factors, DisaggregationScenario
 from ...core.distributions import get_distribution
 

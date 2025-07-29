@@ -40,7 +40,7 @@ Os arquivos CSV devem estar organizados em:
 Exemplo de nome de arquivo: `HADGEM_baseline_QM_daily.csv`
 """
 
-from ..historical.extremes import calculate_p90,max_annual_precipitation
+from ..historical.validation import p90,max_annual_precipitation
 from ...data.processing import read_csv, aggregate_to_csv, verification, fill_missing_data
 from ..historical.trend import get_trend
 
@@ -123,7 +123,7 @@ def analyze_baseline_bias_corrected_gcms(
                 print(f"[!] Arquivo não encontrado: {file_path}")
                 continue
 
-            print(f'--> P90 {name}: {calculate_p90(df=df)}')
+            print(f'--> P90 {name}: {p90(df=df)}')
 
             if save_csv:
                 aggregate_to_csv(df=df,name=name,directory=base_path)
