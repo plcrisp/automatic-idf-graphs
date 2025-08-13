@@ -157,14 +157,15 @@ def get_subdaily_from_disaggregation_factors(
         type_tag = f'm{var_value}'
     else:
         raise ValueError("Cenário inválido.")
+    
+    intervals = [5, 10, 15, 20, 25, 30, 60, 360, 480, 600, 720, 1440]  # Todos
 
     # Definir coluna de referência baseada na frequência
     if frequency == "daily":
         reference_col = 'Precipitation'
-        intervals = [5, 10, 15, 20, 25, 30]  # Apenas subdiários
     elif frequency == "hourly":
         reference_col = 'Max_24h'
-        intervals = [5, 10, 15, 20, 25, 30, 60, 360, 480, 600, 720, 1440]  # Todos
+        
     else:
         raise ValueError("Frequência inválida. Use 'daily' ou 'hourly'.")
 

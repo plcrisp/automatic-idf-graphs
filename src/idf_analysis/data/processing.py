@@ -166,8 +166,6 @@ def verification(df: pd.DataFrame, frequency: Literal["yearly", "monthly", "dail
     d0 = df["Date"].iloc[0]
     di = df["Date"].iloc[-1]
 
-    print(f"\n[INFO] Período da série: {d0} até {di}")
-
     # Gera índice esperado de datas
     if frequency == "yearly":
         expected_index = pd.date_range(d0, di, freq="YS")
@@ -180,9 +178,6 @@ def verification(df: pd.DataFrame, frequency: Literal["yearly", "monthly", "dail
 
     expected_count = len(expected_index)
     actual_count = len(df)
-
-    print(f"[INFO] Períodos esperados: {expected_count}")
-    print(f"[INFO] Entradas no DataFrame: {actual_count}\n")
 
     missing = expected_count - actual_count
 

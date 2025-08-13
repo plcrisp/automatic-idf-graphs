@@ -193,7 +193,7 @@ def prepare_data_pair(
     start_date = max(df_obs['Date'].min(), df_gcm['Date'].min())
     end_date = min(df_obs['Date'].max(), df_gcm['Date'].max())
     
-    print(f"Período comum considerado: {start_date.strftime('%d-%m-%Y')} até {end_date.strftime('%d-%m-%Y')}")
+    print(f"\nPeríodo comum considerado: {start_date.strftime('%d-%m-%Y')} até {end_date.strftime('%d-%m-%Y')}")
 
     df_obs = df_obs[(df_obs['Date'] >= start_date) & (df_obs['Date'] <= end_date)].copy()
     df_gcm = df_gcm[(df_gcm['Date'] >= start_date) & (df_gcm['Date'] <= end_date)].copy()

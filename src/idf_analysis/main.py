@@ -4,6 +4,13 @@ from .data.api.cemaden import get_cemaden_data, finalizar_requisicao_por_id
 from .data.reader import process_data, DataSource
 from .analysis.projection.eqm import eqm_downscaling
 from .analysis.historical.idf import get_final_idf
+from idf_analysis.analysis.historical.intervals import DisaggregationScenario, get_subdaily_from_disaggregation_factors
+from idf_analysis.analysis.historical.subdaily import get_max_subdaily_table
+from idf_analysis.data.processing import read_csv, verification, fill_missing_data
+from idf_analysis.analysis.historical.validation import max_annual_precipitation
+
+
+
 
 from typing import Optional, List
 
@@ -17,9 +24,15 @@ aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inme
 #finalizar_requisicao_por_id(53956, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
 #inmet = get_inmet_data()
 #finalizar_requisicao_por_id(53955, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
-finalizar_requisicao_por_id(53794, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
+#finalizar_requisicao_por_id(53794, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
 #cemaden = get_cemaden_data()
-#eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
+
+inmet_df = read_csv(path='results/inmet_santana/inmet_santana_daily.csv')
+
+
+incomplete_subdaily_inmet = max_annual_precipitation(df=inmet_df, name_file='inmet_santana', output_dir='results/inmet_santana')
+        
+eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
 
 #finalizar_requisicao_por_id(49444, {'codestacao': '120070801A', 'id_tipoestacao': 1, 'nome': 'Cageacre'}, 'XAPURI')
 #finalizar_requisicao_por_id(53605, {'codestacao': '350570802A', 'id_tipoestacao': 1, 'nome': 'Parque Imperial'}, 'BARUERI')
@@ -80,7 +93,7 @@ get_distribution(name_file='inmet_santana', directory='results/inmet_santana', d
 
 
 # Geração e plotagem das curvas IDF finais
-'''
+
 get_final_idf(
     name_file='inmet_santana',
     directory='results/inmet_santana',
@@ -93,7 +106,7 @@ get_final_idf(
     plot_directory='results/inmet_santana/graphs/idf',
     generate_tables=True
 )
-'''
+
 
 
 

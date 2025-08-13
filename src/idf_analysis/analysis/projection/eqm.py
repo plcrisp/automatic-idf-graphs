@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import os
+from typing import Tuple
 from sklearn.metrics import r2_score
 
 from .baseline_analysis import prepare_data_pair, prepare_future_data
@@ -25,8 +28,13 @@ def load_and_prepare_data(name_obs, name_gcm_baseline, name_gcm_future, dir_obs,
     path_gcm_baseline = os.path.join(dir_gcm, f'{name_gcm_baseline}_daily.csv')
     path_gcm_future = os.path.join(dir_gcm, f'{name_gcm_future}_daily.csv')
     
+    print('\n[INFO] Preparando dados históricos.')
+    
     # Prepara pares de dados observados e de baseline
     df_obs, df_baseline = prepare_data_pair(path_observed=path_obs, path_gcm=path_gcm_baseline, return_dataframes=True)
+    
+    print('\n[INFO] Preparando dados futuros.')
+    
     df_future = prepare_future_data(path_gcm_future=path_gcm_future, return_dataframes=True)
     
     # Calcula a precipitação máxima anual para cada conjunto de dados
@@ -49,7 +57,7 @@ def fit_distributions(name_obs, name_gcm_baseline, name_gcm_future, disag_factor
     # Ajusta uma distribuição para cada duração sub-diária dos dados observados
     dists_hist = {}
     for duracao in COLUNAS_DADOS:
-        dists_hist[duracao] = get_distribution(
+        dist_obj = get_distribution(
             name_file=name_obs, 
             duration=duracao, 
             disag_factor=disag_factor_str, 
@@ -57,6 +65,9 @@ def fit_distributions(name_obs, name_gcm_baseline, name_gcm_future, disag_factor
             directory=dir_obs, 
             plot=False
         )
+        if dist_obj is None:
+            raise ValueError(f"[ERRO] Não foi possível reconstruir a distribuição para {duracao}")
+        dists_hist[duracao] = dist_obj
         
     return dist_baseline, dist_future, dists_hist
 
@@ -139,23 +150,68 @@ def save_results(anos_baseline, data_baseline, dados_spatdown, anos_future, data
     # --- DataFrame para o período BASELINE ---
     dict_baseline = {'Year': anos_baseline, 'baseline_daily': data_baseline, **dados_spatdown}
     df_baseline = pd.DataFrame(dict_baseline).round(2)
-    path_baseline = os.path.join(dir_gcm, f'max_subdaily_{name_gcm_baseline}_{name_obs}{disag_factor_str}_baseline.csv')
+    path_baseline = os.path.join(dir_gcm, f'max_subdaily_{name_gcm_baseline}_{name_obs}_{disag_factor_str}_baseline.csv')
     df_baseline.to_csv(path_baseline, index=False)
     print(f"  -> Salvo: {path_baseline}")
 
     # --- DataFrame para o período FUTURO ---
     dict_futuro = {'Year': anos_future, 'future_daily': data_future, **dados_finais_futuro}
     df_futuro = pd.DataFrame(dict_futuro).round(2)
-    path_futuro = os.path.join(dir_gcm, f'max_subdaily_{name_gcm_future}_{name_obs}{disag_factor_str}_future.csv')
+    path_futuro = os.path.join(dir_gcm, f'max_subdaily_{name_gcm_future}_{name_obs}_{disag_factor_str}_future.csv')
     df_futuro.to_csv(path_futuro, index=False)
     print(f"  -> Salvo: {path_futuro}")
+    
+
+
+def generate_eqm_figure_side_by_side(
+    obs_max: pd.DataFrame,
+    baseline_max: pd.DataFrame,
+    future_max: pd.DataFrame,
+    corrected_future: np.ndarray
+) -> Tuple[plt.Figure, np.ndarray]:
+    """
+    Gera uma única figura com dois subplots relacionados ao processo de downscaling via EQM:
+    
+    1. Comparação CDF→CDF entre dados observados e dados de baseline do GCM.
+    2. Comparação Antes vs Depois para os dados futuros do GCM (sem correção vs corrigidos via EQM).
+    
+    Args:
+        obs_max (pd.DataFrame): Dados observados históricos de precipitação.
+        baseline_max (pd.DataFrame): Dados de precipitação do GCM no período de baseline.
+        future_max (pd.DataFrame): Dados de precipitação do GCM no período futuro.
+        corrected_future (np.ndarray): Dados futuros do GCM corrigidos pelo EQM.
+    
+    Returns:
+        Tuple[plt.Figure, np.ndarray]: 
+            fig - Figura contendo os dois subplots.
+            axes - Array de eixos [ax_cdf, ax_before_after].
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    sns.ecdfplot(obs_max['Precipitation'], label='Observed', ax=axes[0])
+    sns.ecdfplot(baseline_max['Precipitation'], label='GCM Baseline', ax=axes[0])
+    axes[0].set_xlabel("Precipitation (mm/day)")
+    axes[0].set_ylabel("Cumulative Frequency")
+    axes[0].set_title("EQM - Observed vs GCM Baseline CDF")
+    axes[0].legend()
+
+    years_future = future_max['Year'].to_numpy()
+    axes[1].plot(years_future, future_max['Precipitation'], label='GCM Future', marker='o')
+    axes[1].plot(years_future, corrected_future, label='GCM Future Corrected (EQM)', marker='s')
+    axes[1].set_xlabel("Year")
+    axes[1].set_ylabel("Precipitation (mm/day)")
+    axes[1].set_title("GCM Future - Before vs After EQM")
+    axes[1].legend()
+
+    fig.tight_layout()
+    return fig, axes
 
 
 
 def eqm_downscaling(name_obs: str, name_gcm_baseline: str, name_gcm_future: str, 
                         scenario: DisaggregationScenario = DisaggregationScenario.BASE, 
                         disag_factor: float = 0.2, dir_obs: str = 'results', 
-                        dir_gcm: str = '../datasets/GCM', verbose: bool = True):
+                        dir_gcm: str = '../datasets/GCM', verbose: bool = False, plot: bool = False):
     """
     Executa o downscaling estatístico de dados de chuva de um GCM usando o método
     de Pareamento de Quantis Equidistantes (EQM).
@@ -232,3 +288,17 @@ def eqm_downscaling(name_obs: str, name_gcm_baseline: str, name_gcm_future: str,
     )
     
     print("\nProcesso de Downscaling EQM concluído com sucesso!")
+    
+    if plot:
+        if isinstance(dados_finais_futuro, dict):
+            if "Max_24h" in dados_finais_futuro:
+                corrected_future_arr = np.array(dados_finais_futuro["Max_24h"])
+            else:
+                key_precip = next((k for k in dados_finais_futuro.keys() if k.lower() != "year"), None)
+                corrected_future_arr = np.array(dados_finais_futuro[key_precip]) if key_precip else np.array([])
+        else:
+            corrected_future_arr = np.array(dados_finais_futuro)
+        
+        figs = generate_eqm_figure_side_by_side(obs_max, baseline_max, future_max, corrected_future_arr)
+
+        return figs
