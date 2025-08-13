@@ -88,13 +88,3 @@ def dbc_percentilico(
         plt.show()
 
     return df_corrigido
-
-dbc_percentilico(
-    name_obs='inmet_santana',
-    name_gcm_baseline='HADGEM_baseline',
-    name_gcm_future='HADGEM_rcp45',
-    dir_obs='results/inmet_santana',
-    dir_gcm='datasets/GCM',
-    plot=True,
-    save_csv_path='results/inmet_santana/inmet_santana_future_dbc.csv'
-)

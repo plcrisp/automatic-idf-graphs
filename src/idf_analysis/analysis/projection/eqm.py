@@ -30,9 +30,9 @@ def load_and_prepare_data(name_obs, name_gcm_baseline, name_gcm_future, dir_obs,
     df_future = prepare_future_data(path_gcm_future=path_gcm_future, return_dataframes=True)
     
     # Calcula a precipitação máxima anual para cada conjunto de dados
-    obs_max = max_annual_precipitation(df_obs, name_file=name_obs, output_dir=dir_obs, outliers=True)
-    baseline_max = max_annual_precipitation(df_baseline, name_file=name_gcm_baseline, output_dir=dir_gcm, outliers=True)
-    future_max = max_annual_precipitation(df_future, name_file=name_gcm_future, output_dir=dir_gcm, outliers=True)
+    obs_max = max_annual_precipitation(df_obs, name_file=name_obs, output_dir=dir_obs)
+    baseline_max = max_annual_precipitation(df_baseline, name_file=name_gcm_baseline, output_dir=dir_gcm)
+    future_max = max_annual_precipitation(df_future, name_file=name_gcm_future, output_dir=dir_gcm)
     
     return obs_max, baseline_max, future_max
 
@@ -178,11 +178,11 @@ def eqm_downscaling(name_obs: str, name_gcm_baseline: str, name_gcm_future: str,
     
     # Define o sufixo do arquivo com base no cenário
     if scenario == DisaggregationScenario.UMIDO:
-        disag_factor_str = f'_p_{disag_factor}'
+        disag_factor_str = f'p{disag_factor}'
     elif scenario == DisaggregationScenario.SECO:
-        disag_factor_str = f'_m_{disag_factor}'
+        disag_factor_str = f'm{disag_factor}'
     else:
-        disag_factor_str = '_ger'
+        disag_factor_str = 'ger'
         
     # ETAPA 1: Carregar e Preparar Dados
     obs_max, baseline_max, future_max = load_and_prepare_data(
@@ -190,7 +190,7 @@ def eqm_downscaling(name_obs: str, name_gcm_baseline: str, name_gcm_future: str,
     )
     
     # Gera os dados sub-diários observados (necessário para o ajuste de distribuição)
-    get_subdaily_from_disaggregation_factors(df=obs_max, scenario=scenario, var_value=disag_factor, name_file=name_obs, directory=dir_obs)
+    get_subdaily_from_disaggregation_factors(df=obs_max, scenario=scenario, var_value=disag_factor, name_file=name_obs, output_dir=dir_obs)
 
     # ETAPA 2: Ajustar Distribuições de Probabilidade
     dist_baseline, dist_future, dists_hist = fit_distributions(

@@ -59,7 +59,7 @@ def p90(df, ax=None, display=True, show_p90=True):
 
 
 
-def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Literal['daily', 'hourly'] = 'daily'):
+def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Literal['daily', 'hourly'] = 'daily', outliers: bool = False):
     """
     Calcula o valor máximo de precipitação anual e remove outliers.
     Para dados horários, soma a precipitação por dia antes de calcular os máximos.
@@ -69,6 +69,7 @@ def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Lit
     - name_file (str): Nome base do arquivo de saída (sem extensão).
     - output_dir (str): Diretório onde o CSV será salvo.
     - frequency (str): 'daily' (espera valores diários) ou 'hourly' (soma por dia antes de agrupar por ano).
+    - outliers (bool): Se True, remove outliers usando a função auxiliar.
 
     Retorna:
     - DataFrame com os valores máximos de precipitação anual, excluindo outliers.
@@ -97,10 +98,11 @@ def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Lit
     # Agrupar por ano e pegar o valor máximo
     df_max = df_daily.groupby('Year')['Precipitation'].max().reset_index()
     print(f"[INFO] Máximos anuais calculados para {df_max.shape[0]} anos.")
-
-    # Remoção de outliers
-    df_clean = remove_outliers_from_max(df_max)
-    print(f"[INFO] Após remoção de outliers: {df_clean.shape[0]} anos restantes.")
+    
+    # Remover outliers usando a função auxiliar caso especificado
+    if not outliers:
+        df_clean = remove_outliers_from_max(df_max)
+        print(f"[INFO] Após remoção de outliers: {df_clean.shape[0]} anos restantes.")
 
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'max_daily_{name_file}.csv')

@@ -194,6 +194,3 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
     return df_corrected
     
     
-
-
-quantile_mapping(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM', plot=True, save_csv_path='results/inmet_santana/inmet_santana_future.csv')
