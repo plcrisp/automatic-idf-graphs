@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from unidecode import unidecode
 from dotenv import load_dotenv
 from importlib import resources
+import re
 
 from ..processing import aggregate_to_csv
 from ..reader import process_data, DataSource
@@ -166,7 +167,9 @@ def get_inmet_data(
         df_dados[""] = ""
 
     # Persistência
-    nome_limpo = unidecode(nome_estacao.lower().replace(" ", "_"))
+    nome_limpo = unidecode(nome_estacao.lower())
+    nome_limpo = re.sub(r"[^a-z0-9]+", "_", nome_limpo)  # substitui tudo que não for letra/número por "_"
+    nome_limpo = re.sub(r"_+", "_", nome_limpo).strip("_")  # remove múltiplos "_" e os das pontas
     pasta = f"./datasets/INMET_{nome_estacao.upper().replace(' ', '_')}"
     os.makedirs(pasta, exist_ok=True)
     caminho_csv = os.path.join(pasta, f"inmet_{nome_limpo}.csv")
