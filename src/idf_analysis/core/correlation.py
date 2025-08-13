@@ -1,85 +1,104 @@
-
-from scipy.stats import pearsonr
+import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.stats import pearsonr
+from datetime import datetime, date
 
-
-
-def pearsonr_pval(x, y):
+def set_date(df):
     """
-    Função auxiliar que retorna o p-valor da correlação de Pearson entre duas séries de dados.
-
-    Parâmetros:
-    x, y (Series): Duas séries de dados numéricos.
-
-    Retorna:
-    float: p-valor da correlação de Pearson entre x e y.
+    Padroniza DataFrame de precipitação:
+    - Cria coluna 'Date' a partir de Year/Month/Day/(Hour)
+    - Agrega por data somando 'Precipitation'
     """
-    return pearsonr(x, y)[1]
+    has_hour = 'Hour' in df.columns
+
+    # Criação do datetime seguro
+    if has_hour:
+        df['Date'] = pd.to_datetime(
+            dict(year=df['Year'], month=df['Month'], day=df['Day'], hour=df['Hour']),
+            errors='coerce'
+        )
+    else:
+        df['Date'] = pd.to_datetime(
+            dict(year=df['Year'], month=df['Month'], day=df['Day']),
+            errors='coerce'
+        )
+
+    # Agrupa por data somando precipitação
+    if 'Precipitation' in df.columns:
+        df = df.groupby('Date', as_index=False)['Precipitation'].sum()
+    else:
+        df = df.groupby('Date', as_index=False).first()
+
+    return df
 
 
-
-def left_join_precipitation(left_df, *dfs):
+def left_join_precipitation(*dfs):
     """
-    Faz junção 'inner' entre o DataFrame à esquerda e múltiplos DataFrames
-    com base na coluna 'Date', mantendo apenas as colunas de precipitação.
-
-    Parâmetros:
-    left_df (DataFrame): DataFrame principal com a coluna 'Precipitation'.
-    *dfs (DataFrame): Múltiplos DataFrames que também possuem 'Date' e 'Precipitation'.
-
-    Retorna:
-    DataFrame: DataFrame resultante contendo a coluna 'Date' e as colunas de precipitação.
+    Combina múltiplos DataFrames de precipitação em um único DataFrame
+    com base na data, padronizando nomes de colunas.
     """
-    # Inicializa o DataFrame de saída como o DataFrame principal (left_df)
-    result_df = left_df[['Date', 'Precipitation']].rename(columns={'Precipitation': 'P_left'})
-    
-    # Faz a junção com cada DataFrame adicional passado em dfs
-    for i, df in enumerate(dfs, 1):
-        # Mantém apenas 'Date' e 'Precipitation' de cada DataFrame
-        df_filtered = df[['Date', 'Precipitation']].rename(columns={'Precipitation': f'P_right{i}'})
-        result_df = result_df.merge(df_filtered, on='Date', how='inner')
-    
+    result_df = set_date(dfs[0]).rename(columns={'Precipitation': 'P1'})
+
+    for i, df in enumerate(dfs[1:], start=2):
+        df_temp = set_date(df).rename(columns={'Precipitation': f'P{i}'})
+        result_df = result_df.merge(df_temp, on='Date', how='inner')
+
     return result_df
 
 
-
-
-def correlation_plots(*dfs):
+def correlation_plots(*dfs, sample_max=5000, log_transform=True, add_regression=True):
     """
-    Gera gráficos de dispersão (pairplots) e calcula a correlação de Pearson entre as colunas de precipitação
-    de múltiplos DataFrames passados.
-
-    Parâmetros:
-    *dfs (DataFrame): Múltiplos DataFrames que contêm a coluna 'Precipitation'.
-
-    Retorna:
-    tuple: Matrizes de correlação e p-valores.
+    Gera pairplots e calcula correlação entre séries de precipitação.
+    
+    Melhorias:
+    - Agregação automática diária
+    - Pairplot com log opcional e linha de regressão
+    - Amostragem para datasets grandes
     """
-    # Faz a junção dos DataFrames e seleciona apenas as colunas de precipitação
+    # Junta dados de todas as estações
     df = left_join_precipitation(*dfs)
-    df = df.drop(columns='Date')  # Remove a coluna 'Date' para a análise de correlação
-    
-    # Gera o gráfico de pairplot
-    sns.pairplot(df)
+    df = df.set_index('Date')
+
+    # Detecta dados horários e agrega
+    freq = pd.infer_freq(df.index[:10])
+    if freq and 'H' in freq.upper():
+        print("[INFO] Dados horários detectados → agregando para diário...")
+        df = df.resample('D').sum()
+
+    df = df.dropna(how='all')
+
+    # Aplica log1p para visualização
+    df_plot = df.copy()
+    if log_transform:
+        df_plot = np.log1p(df_plot)
+
+    # Amostragem para pairplot
+    if len(df_plot) > sample_max:
+        df_plot = df_plot.sample(n=sample_max, random_state=42)
+
+    print(f"[INFO] Gerando pairplot com {len(df_plot)} pontos...")
+    kind = 'reg' if add_regression else 'scatter'
+    sns.pairplot(df_plot, kind=kind, plot_kws={'scatter_kws': {'s': 15, 'alpha': 0.6}})
     plt.show()
-    
-    # Calcula a correlação de Pearson e p-valores
+
+    # Matriz de correlação
     corr_pearson = df.corr(method='pearson')
-    pvalues_pearson = df.corr(method=pearsonr_pval)
-    
-    # Exibe os resultados de forma clara
-    print('----- Pearson Correlation Results -----\n')
-    
-    print('Correlation Coefficient Matrix (Pearson):')
-    print(corr_pearson.to_string(float_format="%.4f"))  # Formatando para 4 casas decimais
-    
-    print('\nP-values Matrix:')
-    print(pvalues_pearson.to_string(float_format="%.4e"))  # Formato científico para p-valores
-    
-    # Explicação adicional
-    print("\nInterpretation of Results:")
-    print("- Correlation values close to 1 or -1 indicate strong relationships.")
-    print("- P-values below 0.05 suggest statistically significant correlations.")
-    
+
+    # Matriz de p-valores
+    pvalues_pearson = pd.DataFrame(np.ones_like(corr_pearson), columns=df.columns, index=df.columns)
+    cols = df.columns
+    for i in range(len(cols)):
+        for j in range(i+1, len(cols)):
+            r, p = pearsonr(df[cols[i]], df[cols[j]])
+            pvalues_pearson.loc[cols[i], cols[j]] = p
+            pvalues_pearson.loc[cols[j], cols[i]] = p
+
+    print("\n[INFO] ----- Resultados da Correlação -----\n")
+    print("Matriz de Correlação (r de Pearson):")
+    print(corr_pearson.to_string(float_format="%.4f"))
+    print("\nMatriz de P-valores:")
+    print(pvalues_pearson.to_string(float_format="%.4e"))
+
     return corr_pearson, pvalues_pearson
