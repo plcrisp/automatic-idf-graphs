@@ -14,14 +14,12 @@ class DataSource(Enum):
 
 
 
-def _to_number(s: pd.Series) -> pd.Series:
+def _to_number(s: pd.Series, fill_value: int = 0) -> pd.Series:
     """
-    Converte uma série de strings para o tipo numérico de forma segura.
-    - Trata 'null' e vazios como NaN.
-    - Troca vírgula decimal por ponto.
-    - Remove caracteres não numéricos (exceto '.' e '-').
+    Converte para inteiro, substituindo valores inválidos/ausentes
+    pelo valor de 'fill_value'.
     """
-    return pd.to_numeric(
+    numeric_series = pd.to_numeric(
         s.astype(str)
          .str.strip()
          .str.replace('null', '', case=False, regex=False)
@@ -29,6 +27,9 @@ def _to_number(s: pd.Series) -> pd.Series:
          .str.replace(r'[^0-9\.\-]+', '', regex=True),
         errors='coerce'
     )
+    
+    # Preenche os NaN e depois converte para int
+    return numeric_series.fillna(fill_value).astype(int)
 
 
 
@@ -167,6 +168,7 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None, sh
         df['Precipitation'] = _to_number(df['Precipitation'])
         if is_hourly:
             df['Hour'] = pd.to_numeric(df['Hour'], errors='coerce') / 100.0
+            df['Hour'] = _to_number(df['Hour'])
 
         print("✅ Detectado:", "INMET (horário)" if is_hourly else "INMET_DAILY (diário)")
 
