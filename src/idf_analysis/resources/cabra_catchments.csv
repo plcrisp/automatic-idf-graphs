@@ -1,0 +1,736 @@
+CABra_ID,longitude,latitude,ANA ID,gauge_hreg,gauge_biome,gauge_state,missing_data,series_length,quality_index
+1,-64.384,-6.541,,Amazon,Amazon,AM,0.0,30,100.0
+2,-66.851,1.215,,Amazon,Amazon,AM,0.0,30,100.0
+3,-67.595,1.074,,Amazon,Amazon,AM,0.0,30,100.0
+4,-67.313,0.372,,Amazon,Amazon,AM,0.0,30,100.0
+5,-69.126,0.477,,Amazon,Amazon,AM,0.0,30,100.0
+6,-68.538,0.13,,Amazon,Amazon,AM,0.0,30,100.0
+7,-69.786,0.248,,Amazon,Amazon,AM,0.0,30,100.0
+8,-66.797,-0.192,,Amazon,Amazon,AM,0.0,30,100.0
+9,-64.829,-0.491,,Amazon,Amazon,AM,0.0,30,100.0
+10,-61.037,3.446,,Amazon,Amazon,RR,1.11,28,98.96
+11,-60.569,3.209,,Amazon,Amazon,RR,0.84,29,99.19
+12,-60.529,4.168,,Amazon,Amazon,RR,1.58,27,98.58
+13,-61.441,2.876,,Amazon,Amazon,RR,1.38,29,98.67
+14,-61.122,1.82,,Amazon,Amazon,RR,1.12,29,98.91
+15,-59.329,-3.147,,Amazon,Amazon,AM,0.01,29,99.99
+16,-59.354,-15.215,,Amazon,Amazon,MT,6.57,26,94.31
+17,-59.96,-15.007,,Amazon,Amazon,MT,0.0,30,100.0
+18,-65.349,-10.793,,Amazon,Amazon,RO,0.0,30,100.0
+19,-65.367,-9.705,,Amazon,Amazon,RO,9.25,27,91.67
+20,-63.068,-9.926,,Amazon,Amazon,RO,1.71,27,98.46
+21,-62.985,-9.887,,Amazon,Amazon,RO,0.0,30,100.0
+22,-63.288,-9.759,,Amazon,Amazon,RO,0.0,30,100.0
+23,-63.711,-8.801,,Amazon,Amazon,RO,2.08,26,98.2
+24,-61.193,-11.686,,Amazon,Amazon,RO,5.13,27,95.38
+25,-61.936,-10.873,,Amazon,Amazon,RO,5.28,27,95.24
+26,-62.055,-8.932,,Amazon,Amazon,RO,5.75,26,95.02
+27,-63.016,-7.478,,Amazon,Amazon,AM,1.2,28,98.88
+28,-61.303,-5.794,,Amazon,Amazon,AM,0.99,28,99.07
+29,-59.465,-10.17,,Amazon,Amazon,MT,2.51,28,97.66
+30,-60.592,-7.706,,Amazon,Amazon,AM,0.0,30,100.0
+31,-60.647,-7.208,,Amazon,Amazon,AM,0.0,30,100.0
+32,-59.056,-6.787,,Amazon,Amazon,AM,0.19,29,99.81
+33,-55.958,2.226,,Amazon,Amazon,PA,8.31,25,93.08
+34,-55.513,-1.921,,Amazon,Amazon,PA,0.0,30,100.0
+35,-54.873,-1.502,,Amazon,Amazon,PA,0.0,30,100.0
+36,-58.338,-11.358,,Amazon,Amazon,MT,3.89,28,96.37
+37,-57.425,-11.536,,Amazon,Amazon,MT,0.75,28,99.3
+38,-55.335,-13.557,,Amazon,Cerrado,MT,1.21,27,98.91
+39,-55.703,-11.652,,Amazon,Amazon,MT,8.37,24,93.3
+40,-55.569,-10.113,,Amazon,Amazon,MT,6.3,26,94.54
+41,-54.905,-9.359,,Amazon,Amazon,PA,4.13,25,96.56
+42,-54.887,-9.817,,Amazon,Amazon,MT,0.0,30,100.0
+43,-55.953,-4.276,,Amazon,Amazon,PA,3.09,25,97.42
+44,-54.397,-1.782,,Amazon,Amazon,PA,0.0,30,100.0
+45,-53.559,-3.677,,Amazon,Amazon,PA,7.23,27,93.49
+46,-54.659,1.218,,Amazon,Amazon,PA,0.0,30,100.0
+47,-54.447,-13.141,,Amazon,Amazon,MT,5.93,23,95.45
+48,-51.985,-6.74,,Amazon,Amazon,PA,4.19,27,96.23
+49,-54.523,-5.65,,Amazon,Amazon,PA,4.41,23,96.62
+50,-52.163,-3.227,,Amazon,Amazon,PA,1.39,29,98.66
+51,-52.579,-0.554,,Amazon,Amazon,AP,0.0,30,100.0
+52,-52.568,-0.571,,Amazon,Amazon,AP,0.0,30,100.0
+53,-48.675,-14.979,,Tocantins-Araguaia,Cerrado,GO,4.52,28,95.78
+54,-49.553,-15.275,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+55,-46.837,-13.763,,Tocantins-Araguaia,Cerrado,GO,3.23,29,96.88
+56,-47.198,-12.417,,Tocantins-Araguaia,Cerrado,TO,9.27,26,91.96
+57,-47.472,-9.994,,Tocantins-Araguaia,Cerrado,TO,0.0,30,100.0
+58,-47.674,-9.962,,Tocantins-Araguaia,Cerrado,TO,0.0,30,100.0
+59,-47.932,-9.309,,Tocantins-Araguaia,Cerrado,TO,0.0,30,100.0
+60,-48.11,-8.39,,Tocantins-Araguaia,Cerrado,TO,0.0,30,100.0
+61,-47.312,-7.708,,Tocantins-Araguaia,Cerrado,TO,2.09,28,98.05
+62,-47.481,-7.337,,Tocantins-Araguaia,Cerrado,TO,1.11,29,98.92
+63,-47.39,-6.289,,Tocantins-Araguaia,Cerrado,TO,0.0,30,100.0
+64,-47.463,-5.789,,Tocantins-Araguaia,Cerrado,TO,0.0,30,100.0
+65,-53.217,-17.301,,Tocantins-Araguaia,Cerrado,GO,0.84,29,99.19
+66,-52.548,-16.201,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+67,-53.549,-16.078,,Tocantins-Araguaia,Cerrado,MT,0.0,30,100.0
+68,-52.228,-15.891,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+69,-51.47,-16.303,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+70,-51.817,-16.43,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+71,-51.852,-15.89,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+72,-51.829,-15.737,,Tocantins-Araguaia,Cerrado,MT,0.0,30,100.0
+73,-50.997,-16.513,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+74,-51.357,-15.935,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+75,-50.706,-15.537,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+76,-51.084,-14.915,,Tocantins-Araguaia,Cerrado,MT,0.0,30,100.0
+77,-50.803,-13.69,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+78,-50.588,-13.211,,Tocantins-Araguaia,Cerrado,MT,0.0,30,100.0
+79,-53.053,-15.249,,Tocantins-Araguaia,Cerrado,MT,0.57,29,99.45
+80,-52.355,-14.672,,Tocantins-Araguaia,Cerrado,MT,0.56,29,99.46
+81,-50.963,-12.293,,Tocantins-Araguaia,Cerrado,MT,0.0,30,100.0
+82,-50.66,-11.618,,Tocantins-Araguaia,Cerrado,MT,0.39,28,99.63
+83,-49.249,-8.273,,Tocantins-Araguaia,Amazon,TO,0.0,30,100.0
+84,-48.612,-7.146,,Tocantins-Araguaia,Amazon,TO,0.67,28,99.38
+85,-48.55,-6.401,,Tocantins-Araguaia,Amazon,PA,0.0,30,100.0
+86,-48.143,-5.648,,Tocantins-Araguaia,Amazon,PA,0.0,30,100.0
+87,-49.136,-5.327,,Tocantins-Araguaia,Amazon,PA,0.0,30,100.0
+88,-49.22,-5.488,,Tocantins-Araguaia,Amazon,PA,2.68,27,97.59
+89,-49.663,-3.757,,Tocantins-Araguaia,Amazon,PA,2.28,27,97.95
+90,-52.016,0.901,,Amazon,Amazon,AP,0.0,30,100.0
+91,-51.439,0.711,,Amazon,Amazon,AP,0.0,30,100.0
+92,-47.764,-2.509,,Tocantins-Araguaia,Amazon,PA,0.0,30,100.0
+93,-46.593,-1.735,Eastern,Northeast Atlantic,Amazon,PA,6.23,26,94.6
+94,-46.316,-1.8,Eastern,Northeast Atlantic,Amazon,PA,0.0,30,100.0
+95,-45.948,-2.056,Eastern,Northeast Atlantic,Amazon,MA,1.55,27,98.6
+96,-45.667,-2.945,Eastern,Northeast Atlantic,Amazon,MA,0.49,29,99.52
+97,-46.934,-4.692,Eastern,Northeast Atlantic,Amazon,MA,6.0,23,95.4
+98,-45.778,-4.033,Eastern,Northeast Atlantic,Amazon,MA,1.97,24,98.42
+99,-45.465,-3.66,Eastern,Northeast Atlantic,Amazon,MA,0.0,30,100.0
+100,-45.982,-5.767,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+101,-45.245,-5.501,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+102,-44.963,-5.102,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+103,-44.929,-5.419,Eastern,Northeast Atlantic,Cerrado,MA,3.23,25,97.31
+104,-44.611,-4.571,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+105,-44.765,-4.221,Eastern,Northeast Atlantic,Amazon,MA,0.0,30,100.0
+106,-46.145,-5.818,Eastern,Northeast Atlantic,Cerrado,MA,1.74,27,98.43
+107,-46.239,-5.613,Eastern,Northeast Atlantic,Cerrado,MA,5.45,26,95.28
+108,-45.218,-3.775,Eastern,Northeast Atlantic,Amazon,MA,3.81,24,96.96
+109,-44.361,-6.371,Eastern,Northeast Atlantic,Cerrado,MA,0.28,29,99.73
+110,-44.709,-6.066,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+111,-44.343,-6.013,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+112,-44.248,-6.021,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+113,-43.586,-5.706,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+114,-43.884,-5.337,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+115,-43.367,-4.865,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+116,-43.875,-4.459,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+117,-43.934,-4.466,Eastern,Northeast Atlantic,Cerrado,MA,3.4,25,97.17
+118,-44.13,-4.125,Eastern,Northeast Atlantic,Cerrado,MA,0.0,30,100.0
+119,-44.374,-3.623,Eastern,Northeast Atlantic,Cerrado,MA,1.93,27,98.27
+120,-43.703,-3.577,Eastern,Northeast Atlantic,Cerrado,MA,5.04,25,95.8
+121,-43.527,-3.335,Eastern,Northeast Atlantic,Cerrado,MA,0.81,29,99.21
+122,-43.902,-3.462,Eastern,Northeast Atlantic,Cerrado,MA,0.48,29,99.53
+123,-45.926,-9.113,,Parnaíba,Cerrado,MA,0.0,30,100.0
+124,-45.256,-7.565,,Parnaíba,Cerrado,PI,0.0,30,100.0
+125,-44.614,-7.391,,Parnaíba,Cerrado,PI,0.0,30,100.0
+126,-46.036,-7.536,,Parnaíba,Cerrado,MA,0.0,30,100.0
+127,-44.814,-7.081,,Parnaíba,Cerrado,MA,0.0,30,100.0
+128,-44.211,-8.792,,Parnaíba,Cerrado,PI,2.83,21,98.02
+129,-43.649,-7.247,,Parnaíba,Cerrado,PI,0.68,27,99.39
+130,-42.214,-5.666,,Parnaíba,aatinga,PI,0.0,30,100.0
+131,-42.228,-3.904,,Parnaíba,aatinga,PI,0.65,28,99.4
+132,-41.976,-3.724,,Parnaíba,aatinga,PI,0.26,29,99.75
+133,-40.382,-3.911,Western,Northeast Atlantic,aatinga,CE,0.28,29,99.73
+134,-39.962,-6.646,Western,Northeast Atlantic,aatinga,CE,0.07,29,99.93
+135,-39.292,-6.373,Western,Northeast Atlantic,aatinga,CE,0.15,29,99.86
+136,-38.985,-7.301,Western,Northeast Atlantic,aatinga,CE,0.0,30,100.0
+137,-38.868,-6.407,Western,Northeast Atlantic,aatinga,CE,0.57,29,99.45
+138,-38.191,-5.223,Western,Northeast Atlantic,aatinga,CE,0.85,27,99.24
+139,-38.447,-5.122,Western,Northeast Atlantic,aatinga,CE,0.94,27,99.15
+140,-37.924,-6.963,Western,Northeast Atlantic,aatinga,PB,0.45,29,99.57
+141,-37.797,-6.726,Western,Northeast Atlantic,aatinga,PB,0.0,30,100.0
+142,-37.355,-6.377,Western,Northeast Atlantic,aatinga,RN,1.04,28,99.03
+143,-36.783,-6.594,Western,Northeast Atlantic,aatinga,RN,5.07,22,96.28
+144,-35.418,-5.621,Western,Northeast Atlantic,aatinga,RN,0.82,29,99.21
+145,-35.315,-6.063,Western,Northeast Atlantic,forest,RN,4.98,24,96.01
+146,-35.529,-6.605,Western,Northeast Atlantic,aatinga,PB,2.43,23,98.14
+147,-36.505,-7.721,Western,Northeast Atlantic,aatinga,PB,1.62,25,98.65
+148,-36.434,-7.397,Western,Northeast Atlantic,aatinga,PB,3.9,21,97.27
+149,-35.999,-7.527,Western,Northeast Atlantic,aatinga,PB,0.29,27,99.74
+150,-35.048,-7.129,Western,Northeast Atlantic,forest,PB,3.39,25,97.18
+151,-35.233,-7.754,Western,Northeast Atlantic,forest,PE,3.29,27,97.03
+152,-35.079,-7.98,Western,Northeast Atlantic,forest,PE,5.99,24,95.21
+153,-35.366,-8.28,Western,Northeast Atlantic,forest,PE,0.48,28,99.55
+154,-35.916,-8.497,Western,Northeast Atlantic,forest,PE,1.62,27,98.54
+155,-35.577,-8.682,Western,Northeast Atlantic,forest,PE,0.0,30,100.0
+156,-35.86,-9.467,Western,Northeast Atlantic,forest,AL,0.26,28,99.76
+157,-36.304,-10.031,Western,Northeast Atlantic,aatinga,AL,4.77,23,96.34
+158,-45.485,-19.773,,São Francisco,Cerrado,MG,0.0,30,100.0
+159,-45.279,-19.28,,São Francisco,Cerrado,MG,0.0,30,100.0
+160,-44.194,-18.672,,São Francisco,Cerrado,MG,0.0,30,100.0
+161,-44.226,-18.31,,São Francisco,Cerrado,MG,0.0,30,100.0
+162,-44.712,-17.595,,São Francisco,Cerrado,MG,0.0,30,100.0
+163,-45.078,-16.657,,São Francisco,Cerrado,MG,0.0,30,100.0
+164,-46.431,-17.255,,São Francisco,Cerrado,MG,0.0,30,100.0
+165,-46.018,-17.03,,São Francisco,Cerrado,MG,0.0,30,100.0
+166,-45.383,-16.908,,São Francisco,Cerrado,MG,0.0,30,100.0
+167,-45.067,-16.376,,São Francisco,Cerrado,MG,0.0,30,100.0
+168,-46.119,-15.918,,São Francisco,Cerrado,MG,0.0,30,100.0
+169,-45.742,-16.153,,São Francisco,Cerrado,MG,0.0,30,100.0
+170,-45.416,-16.283,,São Francisco,Cerrado,MG,0.0,30,100.0
+171,-44.899,-15.967,,São Francisco,Cerrado,MG,0.0,30,100.0
+172,-44.768,-15.483,,São Francisco,Cerrado,MG,0.0,30,100.0
+173,-44.407,-15.602,,São Francisco,aatinga,MG,0.0,30,100.0
+174,-43.931,-14.757,,São Francisco,aatinga,MG,0.0,30,100.0
+175,-44.092,-14.652,,São Francisco,aatinga,MG,0.0,30,100.0
+176,-43.675,-15.343,,São Francisco,aatinga,MG,0.0,30,100.0
+177,-44.411,-14.28,,São Francisco,Cerrado,BA,0.0,30,100.0
+178,-44.153,-14.261,,São Francisco,Cerrado,MG,0.0,30,100.0
+179,-43.762,-14.306,,São Francisco,Cerrado,BA,0.0,30,100.0
+180,-43.434,-13.259,,São Francisco,Cerrado,BA,0.0,30,100.0
+181,-44.199,-13.401,,São Francisco,Cerrado,BA,0.0,30,100.0
+182,-43.91,-13.294,,São Francisco,Cerrado,BA,0.0,30,100.0
+183,-43.38,-12.87,,São Francisco,Cerrado,BA,0.0,30,100.0
+184,-43.226,-12.693,,São Francisco,Cerrado,BA,0.0,30,100.0
+185,-43.226,-12.182,,São Francisco,Cerrado,BA,0.0,30,100.0
+186,-43.284,-11.558,,São Francisco,Cerrado,BA,0.0,30,100.0
+187,-45.01,-12.152,,São Francisco,Cerrado,BA,0.1,29,99.9
+188,-44.886,-11.975,,São Francisco,Cerrado,BA,0.0,30,100.0
+189,-44.502,-11.723,,São Francisco,Cerrado,BA,0.0,30,100.0
+190,-44.155,-11.613,,São Francisco,Cerrado,BA,0.0,30,100.0
+191,-45.197,-11.053,,São Francisco,Cerrado,BA,0.0,30,100.0
+192,-44.536,-11.018,,São Francisco,Cerrado,BA,0.0,30,100.0
+193,-43.948,-11.238,,São Francisco,Cerrado,BA,0.0,30,100.0
+194,-43.83,-11.351,,São Francisco,Cerrado,BA,0.0,30,100.0
+195,-40.504,-9.404,,São Francisco,aatinga,PE,0.0,30,100.0
+196,-39.824,-8.811,,São Francisco,aatinga,PE,0.0,30,100.0
+197,-39.245,-8.627,,São Francisco,aatinga,PE,0.0,30,100.0
+198,-37.756,-9.628,,São Francisco,aatinga,AL,0.0,30,100.0
+199,-37.446,-9.752,,São Francisco,aatinga,AL,0.0,30,100.0
+200,-36.983,-9.98,,São Francisco,aatinga,AL,0.0,30,100.0
+201,-36.824,-10.21,,São Francisco,forest,AL,0.0,30,100.0
+202,-37.347,-10.947,,East Atlantic,forest,SE,0.49,28,99.54
+203,-37.976,-11.194,,East Atlantic,aatinga,BA,0.73,27,99.34
+204,-37.568,-11.54,,East Atlantic,forest,SE,2.44,27,97.81
+205,-40.47,-11.208,,East Atlantic,aatinga,BA,2.22,28,97.93
+206,-39.633,-10.973,,East Atlantic,aatinga,BA,0.0,30,100.0
+207,-38.836,-11.064,,East Atlantic,aatinga,BA,5.28,25,95.6
+208,-38.513,-11.098,,East Atlantic,aatinga,BA,2.0,28,98.13
+209,-37.804,-11.733,,East Atlantic,forest,BA,1.1,27,99.01
+210,-38.348,-11.782,,East Atlantic,aatinga,BA,0.57,29,99.44
+211,-37.754,-12.053,,East Atlantic,forest,BA,2.56,28,97.61
+212,-38.793,-12.331,,East Atlantic,aatinga,BA,0.28,29,99.73
+213,-38.764,-12.236,,East Atlantic,forest,BA,2.42,25,97.98
+214,-38.642,-12.307,,East Atlantic,forest,BA,0.28,29,99.73
+215,-41.322,-12.841,,East Atlantic,aatinga,BA,0.01,29,99.99
+216,-41.329,-12.491,,East Atlantic,aatinga,BA,1.93,28,98.19
+217,-41.206,-12.5,,East Atlantic,aatinga,BA,0.07,29,99.93
+218,-41.328,-12.756,,East Atlantic,aatinga,BA,4.89,27,95.6
+219,-41.064,-12.936,,East Atlantic,aatinga,BA,0.52,29,99.5
+220,-40.959,-12.986,,East Atlantic,aatinga,BA,0.0,30,100.0
+221,-40.214,-12.762,,East Atlantic,aatinga,BA,0.0,30,100.0
+222,-39.848,-12.516,,East Atlantic,aatinga,BA,0.0,30,100.0
+223,-39.788,-11.47,,East Atlantic,aatinga,BA,2.56,25,97.86
+224,-39.387,-11.806,,East Atlantic,aatinga,BA,0.47,28,99.57
+225,-39.031,-13.034,,East Atlantic,forest,BA,0.28,29,99.73
+226,-39.08,-13.365,,East Atlantic,forest,BA,1.72,24,98.62
+227,-43.207,-17.314,,East Atlantic,Cerrado,MG,0.0,30,100.0
+228,-42.918,-16.593,,East Atlantic,Cerrado,MG,0.35,29,99.66
+229,-42.486,-16.679,,East Atlantic,Cerrado,MG,0.0,30,100.0
+230,-42.583,-16.193,,East Atlantic,Cerrado,MG,0.1,29,99.9
+231,-42.31,-16.618,,East Atlantic,Cerrado,MG,0.0,30,100.0
+232,-42.995,-17.579,,East Atlantic,Cerrado,MG,0.0,30,100.0
+233,-42.818,-17.278,,East Atlantic,Cerrado,MG,0.0,30,100.0
+234,-42.597,-17.22,,East Atlantic,Cerrado,MG,3.29,28,96.93
+235,-42.347,-16.861,,East Atlantic,Cerrado,MG,0.0,30,100.0
+236,-42.079,-16.851,,East Atlantic,forest,MG,0.0,30,100.0
+237,-41.503,-16.57,,East Atlantic,forest,MG,0.0,30,100.0
+238,-41.499,-16.689,,East Atlantic,forest,MG,3.51,25,97.07
+239,-41.014,-16.427,,East Atlantic,forest,MG,0.02,29,99.98
+240,-40.739,-16.12,,East Atlantic,forest,MG,0.0,30,100.0
+241,-40.305,-16.135,,East Atlantic,forest,MG,0.0,30,100.0
+242,-39.425,-16.014,,East Atlantic,forest,BA,6.65,21,95.34
+243,-39.545,-17.046,,East Atlantic,forest,BA,0.16,29,99.85
+244,-39.981,-17.186,,East Atlantic,forest,BA,0.0,30,100.0
+245,-39.774,-17.252,,East Atlantic,forest,BA,0.93,28,99.13
+246,-39.623,-17.25,,East Atlantic,forest,BA,2.5,26,97.83
+247,-40.221,-17.375,,East Atlantic,forest,BA,0.99,28,99.08
+248,-39.644,-17.512,,East Atlantic,forest,BA,7.49,21,94.75
+249,-39.664,-17.798,,East Atlantic,forest,BA,0.24,29,99.77
+250,-41.492,-17.596,,East Atlantic,forest,MG,0.0,30,100.0
+251,-41.249,-17.488,,East Atlantic,forest,MG,0.0,30,100.0
+252,-41.122,-17.739,,East Atlantic,forest,MG,0.0,30,100.0
+253,-40.762,-17.704,,East Atlantic,forest,MG,0.0,30,100.0
+254,-40.676,-17.32,,East Atlantic,forest,MG,0.0,30,100.0
+255,-40.382,-17.842,,East Atlantic,forest,MG,0.0,30,100.0
+256,-41.112,-18.045,,East Atlantic,forest,MG,0.16,29,99.85
+257,-40.336,-18.564,,East Atlantic,forest,ES,8.08,24,93.54
+258,-40.915,-18.755,,East Atlantic,forest,ES,0.0,30,100.0
+259,-40.415,-18.7,,East Atlantic,forest,ES,0.94,27,99.15
+260,-40.092,-18.643,,East Atlantic,forest,ES,0.76,26,99.34
+261,-43.301,-20.688,,Southeast Atlantic,forest,MG,0.47,28,99.56
+262,-43.242,-20.848,,Southeast Atlantic,forest,MG,0.28,29,99.73
+263,-43.098,-20.912,,Southeast Atlantic,forest,MG,2.65,27,97.62
+264,-43.088,-20.671,,Southeast Atlantic,forest,MG,0.28,29,99.73
+265,-42.923,-20.723,,Southeast Atlantic,forest,MG,0.54,28,99.5
+266,-43.001,-20.715,,Southeast Atlantic,forest,MG,2.13,28,98.02
+267,-43.182,-20.39,,Southeast Atlantic,forest,MG,0.28,29,99.73
+268,-43.139,-20.362,,Southeast Atlantic,forest,MG,0.28,29,99.73
+269,-42.673,-20.7,,Southeast Atlantic,forest,MG,0.28,29,99.73
+270,-42.649,-20.226,,Southeast Atlantic,forest,MG,0.34,28,99.68
+271,-42.44,-20.103,,Southeast Atlantic,forest,MG,2.16,28,97.98
+272,-42.477,-19.777,,Southeast Atlantic,forest,MG,0.93,28,99.13
+273,-42.446,-19.71,,Southeast Atlantic,forest,MG,0.28,29,99.73
+274,-43.173,-19.932,,Southeast Atlantic,forest,MG,0.5,28,99.53
+275,-43.457,-19.97,,Southeast Atlantic,forest,MG,1.22,28,98.86
+276,-43.019,-19.232,,Southeast Atlantic,forest,MG,0.54,28,99.5
+277,-43.083,-18.895,,Southeast Atlantic,forest,MG,0.28,29,99.73
+278,-42.423,-19.19,,Southeast Atlantic,forest,MG,0.29,28,99.73
+279,-42.713,-18.895,,Southeast Atlantic,forest,MG,0.28,29,99.73
+280,-42.36,-18.952,,Southeast Atlantic,forest,MG,3.61,28,96.63
+281,-41.951,-18.883,,Southeast Atlantic,forest,MG,0.28,29,99.73
+282,-42.603,-18.363,,Southeast Atlantic,forest,MG,0.28,29,99.73
+283,-42.455,-18.202,,Southeast Atlantic,forest,MG,0.28,29,99.73
+284,-41.918,-18.575,,Southeast Atlantic,forest,MG,0.28,29,99.73
+285,-41.642,-18.973,,Southeast Atlantic,forest,MG,0.28,29,99.73
+286,-41.532,-19.064,,Southeast Atlantic,forest,MG,1.1,28,98.98
+287,-41.786,-19.743,,Southeast Atlantic,forest,MG,0.28,29,99.73
+288,-41.728,-20.107,,Southeast Atlantic,forest,MG,0.28,29,99.73
+289,-41.162,-19.492,,Southeast Atlantic,forest,MG,0.82,29,99.21
+290,-41.125,-20.078,,Southeast Atlantic,forest,ES,2.52,28,97.65
+291,-41.058,-19.902,,Southeast Atlantic,forest,ES,0.28,29,99.73
+292,-41.012,-19.526,,Southeast Atlantic,forest,ES,0.28,29,99.73
+293,-40.733,-19.559,,Southeast Atlantic,forest,ES,2.66,27,97.61
+294,-40.687,-19.423,,Southeast Atlantic,forest,ES,2.52,28,97.65
+295,-40.528,-20.1,,Southeast Atlantic,forest,ES,0.0,30,100.0
+296,-40.653,-20.316,,Southeast Atlantic,forest,ES,0.0,30,100.0
+297,-40.813,-20.557,,Southeast Atlantic,forest,ES,0.0,30,100.0
+298,-40.946,-20.885,,Southeast Atlantic,forest,ES,0.0,30,100.0
+299,-40.828,-20.777,,Southeast Atlantic,forest,ES,0.0,30,100.0
+300,-41.409,-20.372,,Southeast Atlantic,forest,ES,0.0,30,100.0
+301,-41.534,-20.352,,Southeast Atlantic,forest,ES,0.0,30,100.0
+302,-41.503,-20.43,,Southeast Atlantic,forest,ES,0.0,30,100.0
+303,-41.511,-20.528,,Southeast Atlantic,forest,ES,0.0,30,100.0
+304,-41.664,-20.539,,Southeast Atlantic,forest,ES,0.0,30,100.0
+305,-41.466,-20.748,,Southeast Atlantic,forest,ES,0.0,30,100.0
+306,-41.2,-20.606,,Southeast Atlantic,forest,ES,0.01,29,99.99
+307,-41.174,-20.703,,Southeast Atlantic,forest,ES,0.0,30,100.0
+308,-40.961,-20.957,,Southeast Atlantic,forest,ES,0.0,30,100.0
+309,-41.921,-20.695,,Southeast Atlantic,forest,MG,0.0,30,100.0
+310,-41.847,-20.687,,Southeast Atlantic,forest,ES,0.0,30,100.0
+311,-41.679,-20.774,,Southeast Atlantic,forest,ES,0.0,30,100.0
+312,-41.648,-21.029,,Southeast Atlantic,forest,ES,0.0,30,100.0
+313,-41.464,-21.204,,Southeast Atlantic,forest,ES,0.0,30,100.0
+314,-41.31,-21.224,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+315,-45.044,-22.994,,Southeast Atlantic,forest,SP,0.01,29,99.99
+316,-45.144,-23.33,,Southeast Atlantic,forest,SP,0.4,29,99.61
+317,-45.9,-23.369,,Southeast Atlantic,forest,SP,8.14,25,93.22
+318,-45.907,-23.125,,Southeast Atlantic,forest,SP,0.0,30,100.0
+319,-45.473,-22.913,,Southeast Atlantic,forest,SP,0.0,30,100.0
+320,-45.183,-22.812,,Southeast Atlantic,forest,SP,0.02,29,99.98
+321,-44.975,-22.692,,Southeast Atlantic,forest,SP,0.0,30,100.0
+322,-44.417,-22.387,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+323,-44.229,-22.478,,Southeast Atlantic,forest,RJ,0.26,29,99.75
+324,-43.286,-22.163,,Southeast Atlantic,forest,RJ,0.01,29,99.99
+325,-43.132,-22.332,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+326,-42.897,-22.199,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+327,-43.008,-22.192,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+328,-43.178,-22.3,,Southeast Atlantic,forest,RJ,4.67,26,95.95
+329,-43.154,-22.14,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+330,-43.505,-21.594,,Southeast Atlantic,forest,MG,0.0,30,100.0
+331,-43.325,-21.778,,Southeast Atlantic,forest,MG,0.0,30,100.0
+332,-43.885,-21.854,,Southeast Atlantic,forest,MG,0.0,30,100.0
+333,-43.444,-21.86,,Southeast Atlantic,forest,MG,0.27,29,99.74
+334,-43.374,-21.967,,Southeast Atlantic,forest,MG,0.0,30,100.0
+335,-44.538,-22.331,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+336,-44.389,-22.27,,Southeast Atlantic,forest,MG,0.0,30,100.0
+337,-44.264,-22.245,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+338,-44.091,-22.152,,Southeast Atlantic,forest,MG,0.0,30,100.0
+339,-43.819,-22.087,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+340,-43.71,-22.224,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+341,-43.752,-22.158,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+342,-43.559,-22.084,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+343,-43.041,-21.897,,Southeast Atlantic,forest,MG,0.0,30,100.0
+344,-42.991,-22.035,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+345,-42.677,-22.05,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+346,-42.538,-21.77,,Southeast Atlantic,forest,MG,0.0,30,100.0
+347,-42.343,-21.658,,Southeast Atlantic,forest,RJ,0.86,27,99.23
+348,-43.199,-21.303,,Southeast Atlantic,forest,MG,0.0,30,100.0
+349,-43.248,-21.355,,Southeast Atlantic,forest,MG,0.34,29,99.67
+350,-43.053,-21.356,,Southeast Atlantic,forest,MG,0.0,30,100.0
+351,-42.862,-21.309,,Southeast Atlantic,forest,MG,0.0,30,100.0
+352,-43.127,-21.476,,Southeast Atlantic,forest,MG,0.0,30,100.0
+353,-42.83,-21.471,,Southeast Atlantic,forest,MG,0.0,30,100.0
+354,-42.696,-21.391,,Southeast Atlantic,forest,MG,0.0,30,100.0
+355,-41.984,-21.628,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+356,-42.571,-22.218,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+357,-42.416,-22.158,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+358,-41.938,-21.77,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+359,-41.954,-21.729,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+360,-41.859,-21.644,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+361,-42.514,-21.051,,Southeast Atlantic,forest,MG,3.29,28,96.93
+362,-42.302,-20.773,,Southeast Atlantic,forest,MG,0.0,30,100.0
+363,-42.349,-20.911,,Southeast Atlantic,forest,MG,0.0,30,100.0
+364,-42.214,-21.152,,Southeast Atlantic,forest,MG,0.0,30,100.0
+365,-42.023,-20.739,,Southeast Atlantic,forest,MG,0.0,30,100.0
+366,-41.892,-21.207,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+367,-41.618,-21.49,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+368,-41.3,-21.753,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+369,-42.463,-22.372,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+370,-42.379,-22.369,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+371,-42.322,-22.402,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+372,-42.736,-22.587,,Southeast Atlantic,forest,RJ,0.91,28,99.15
+373,-44.617,-22.736,,Southeast Atlantic,forest,SP,0.01,29,99.99
+374,-44.56,-22.96,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+375,-44.762,-23.223,,Southeast Atlantic,forest,RJ,1.91,29,98.16
+376,-46.556,-18.836,,Paraná,Cerrado,MG,0.0,30,100.0
+377,-46.539,-18.602,,Paraná,Cerrado,MG,0.0,30,100.0
+378,-47.692,-18.112,,Paraná,Cerrado,GO,9.39,27,91.55
+379,-46.973,-18.892,,Paraná,Cerrado,MG,0.0,30,100.0
+380,-47.406,-18.492,,Paraná,Cerrado,MG,0.0,30,100.0
+381,-47.409,-18.781,,Paraná,Cerrado,MG,1.83,27,98.36
+382,-47.458,-18.977,,Paraná,Cerrado,MG,0.0,30,100.0
+383,-47.69,-18.739,,Paraná,Cerrado,MG,0.0,30,100.0
+384,-47.017,-20.013,,Paraná,Cerrado,MG,0.03,29,99.97
+385,-46.571,-19.518,,Paraná,Cerrado,MG,0.0,30,100.0
+386,-46.542,-19.475,,Paraná,Cerrado,MG,0.0,30,100.0
+387,-48.191,-18.989,,Paraná,Cerrado,MG,0.02,29,99.98
+388,-48.805,-16.297,,Paraná,Cerrado,GO,6.11,27,94.5
+389,-48.781,-18.698,,Paraná,Cerrado,MG,0.0,30,100.0
+390,-49.495,-16.346,,Paraná,Cerrado,GO,0.0,30,100.0
+391,-49.28,-16.613,,Paraná,Cerrado,GO,0.0,30,100.0
+392,-49.243,-16.632,,Paraná,Cerrado,GO,0.0,30,100.0
+393,-49.198,-16.681,,Paraná,Cerrado,GO,0.0,30,100.0
+394,-48.898,-16.458,,Paraná,Cerrado,GO,0.0,30,100.0
+395,-49.105,-16.914,,Paraná,Cerrado,GO,0.0,30,100.0
+396,-49.277,-17.254,,Paraná,Cerrado,GO,0.0,30,100.0
+397,-49.601,-18.349,,Paraná,forest,GO,0.0,30,100.0
+398,-49.689,-17.108,,Paraná,Cerrado,GO,0.0,30,100.0
+399,-50.29,-17.08,,Paraná,Cerrado,GO,0.0,30,100.0
+400,-50.188,-17.732,,Paraná,Cerrado,GO,0.01,29,99.99
+401,-50.247,-17.98,,Paraná,Cerrado,GO,0.0,30,100.0
+402,-51.075,-17.359,,Paraná,Cerrado,GO,0.0,30,100.0
+403,-50.771,-17.333,,Paraná,Cerrado,GO,0.0,30,100.0
+404,-50.683,-17.327,,Paraná,Cerrado,GO,0.0,30,100.0
+405,-50.776,-17.464,,Paraná,Cerrado,GO,7.13,27,93.58
+406,-50.557,-17.541,,Paraná,Cerrado,GO,0.0,30,100.0
+407,-50.333,-17.968,,Paraná,Cerrado,GO,0.0,30,100.0
+408,-50.033,-18.104,,Paraná,Cerrado,GO,1.59,29,98.46
+409,-49.451,-18.942,,Paraná,Cerrado,MG,5.0,27,95.5
+410,-49.179,-19.361,,Paraná,Cerrado,MG,0.0,30,100.0
+411,-49.698,-19.036,,Paraná,Cerrado,MG,0.0,30,100.0
+412,-50.528,-18.498,,Paraná,forest,GO,7.49,27,93.26
+413,-51.39,-17.861,,Paraná,Cerrado,GO,6.99,26,93.94
+414,-52.603,-17.579,,Paraná,Cerrado,GO,1.54,29,98.51
+415,-50.667,-19.219,,Paraná,forest,MG,0.0,30,100.0
+416,-52.532,-18.406,,Paraná,Cerrado,GO,0.0,30,100.0
+417,-52.097,-18.516,,Paraná,Cerrado,GO,0.0,30,100.0
+418,-51.149,-19.101,,Paraná,Cerrado,GO,0.51,29,99.51
+419,-51.534,-19.14,,Paraná,Cerrado,GO,0.0,30,100.0
+420,-44.195,-21.947,,Paraná,forest,MG,0.27,29,99.74
+421,-44.327,-21.492,,Paraná,forest,MG,0.27,29,99.74
+422,-44.637,-22.17,,Paraná,forest,MG,0.0,30,100.0
+423,-44.602,-21.98,,Paraná,forest,MG,0.0,30,100.0
+424,-44.466,-21.998,,Paraná,forest,MG,0.28,29,99.73
+425,-44.355,-21.745,,Paraná,forest,MG,0.0,30,100.0
+426,-44.306,-21.738,,Paraná,forest,MG,0.0,30,100.0
+427,-44.351,-21.689,,Paraná,forest,MG,0.0,30,100.0
+428,-44.915,-21.506,,Paraná,forest,MG,0.27,29,99.74
+429,-44.871,-21.322,,Paraná,forest,MG,0.27,29,99.74
+430,-43.814,-21.278,,Paraná,forest,MG,0.0,30,100.0
+431,-43.979,-21.186,,Paraná,forest,MG,0.0,30,100.0
+432,-43.964,-21.428,,Paraná,forest,MG,0.83,29,99.2
+433,-44.137,-21.165,,Paraná,forest,MG,0.0,30,100.0
+434,-44.234,-21.124,,Paraná,forest,MG,0.0,30,100.0
+435,-44.213,-21.054,,Paraná,forest,MG,0.0,30,100.0
+436,-44.33,-21.196,,Paraná,forest,MG,0.27,29,99.74
+437,-44.737,-21.139,,Paraná,forest,MG,0.0,30,100.0
+438,-45.172,-21.342,,Paraná,forest,MG,0.0,30,100.0
+439,-45.287,-22.508,,Paraná,forest,MG,0.84,28,99.22
+440,-45.425,-22.446,,Paraná,forest,MG,0.28,29,99.73
+441,-45.621,-22.47,,Paraná,forest,MG,0.28,29,99.73
+442,-45.078,-21.889,,Paraná,forest,MG,0.0,30,100.0
+443,-44.88,-21.952,,Paraná,forest,MG,0.0,30,100.0
+444,-45.262,-21.871,,Paraná,forest,MG,0.0,30,100.0
+445,-45.248,-21.704,,Paraná,forest,MG,0.0,30,100.0
+446,-45.259,-21.678,,Paraná,forest,MG,3.36,28,96.87
+447,-45.489,-21.612,,Paraná,forest,MG,0.0,30,100.0
+448,-46.361,-21.278,,Paraná,forest,MG,0.84,28,99.22
+449,-46.807,-20.809,,Paraná,forest,MG,0.0,30,100.0
+450,-47.013,-21.136,,Paraná,Cerrado,MG,2.98,29,97.12
+451,-46.309,-22.004,,Paraná,forest,MG,6.03,26,94.77
+452,-46.704,-21.294,,Paraná,forest,MG,4.14,28,96.13
+453,-46.962,-21.42,,Paraná,Cerrado,MG,0.0,30,100.0
+454,-47.477,-21.319,,Paraná,Cerrado,SP,0.0,30,100.0
+455,-46.323,-22.318,,Paraná,forest,MG,3.71,23,97.16
+456,-46.608,-22.273,,Paraná,forest,MG,3.63,26,96.85
+457,-46.648,-22.522,,Paraná,forest,SP,8.08,24,93.54
+458,-47.134,-22.299,,Paraná,Cerrado,SP,0.01,29,99.99
+459,-47.474,-21.846,,Paraná,forest,SP,0.0,30,100.0
+460,-48.041,-21.517,,Paraná,Cerrado,SP,0.0,30,100.0
+461,-48.176,-21.018,,Paraná,Cerrado,SP,0.0,30,100.0
+462,-47.058,-23.15,,Paraná,forest,SP,5.16,25,95.7
+463,-46.633,-22.882,,Paraná,forest,SP,0.0,30,100.0
+464,-46.987,-22.709,,Paraná,forest,SP,0.0,30,100.0
+465,-46.781,-22.708,,Paraná,forest,SP,1.71,27,98.46
+466,-46.365,-23.052,,Paraná,forest,SP,5.57,24,95.55
+467,-46.557,-23.104,,Paraná,forest,SP,1.48,28,98.62
+468,-47.902,-22.166,,Paraná,Cerrado,SP,2.5,29,97.58
+469,-52.901,-20.445,,Paraná,Cerrado,MS,0.0,30,100.0
+470,-53.718,-20.441,,Paraná,Cerrado,MS,3.75,27,96.62
+471,-53.053,-21.608,,Paraná,Cerrado,MS,0.85,28,99.21
+472,-48.109,-23.625,,Paraná,Cerrado,SP,3.33,24,97.34
+473,-49.958,-23.767,,Paraná,forest,PR,0.0,30,100.0
+474,-50.163,-23.342,,Paraná,forest,PR,0.0,30,100.0
+475,-50.391,-23.85,,Paraná,forest,PR,0.01,29,99.99
+476,-50.448,-23.399,,Paraná,forest,PR,1.4,29,98.65
+477,-50.525,-25.2,,Paraná,forest,PR,0.0,30,100.0
+478,-50.39,-24.947,,Paraná,forest,PR,0.0,30,100.0
+479,-50.409,-24.508,,Paraná,Cerrado,PR,0.0,30,100.0
+480,-50.923,-23.637,,Paraná,forest,PR,0.0,30,100.0
+481,-50.984,-23.251,,Paraná,forest,PR,0.0,30,100.0
+482,-50.788,-23.173,,Paraná,forest,PR,3.11,27,97.2
+483,-52.079,-22.857,,Paraná,forest,PR,5.17,25,95.7
+484,-54.422,-21.641,,Paraná,forest,MS,0.56,29,99.46
+485,-53.531,-22.383,,Paraná,forest,MS,0.0,30,100.0
+486,-50.943,-25.205,,Paraná,forest,PR,0.0,30,100.0
+487,-51.143,-24.828,,Paraná,forest,PR,0.0,30,100.0
+488,-51.425,-24.341,,Paraná,forest,PR,0.0,30,100.0
+489,-51.482,-24.106,,Paraná,forest,PR,0.0,30,100.0
+490,-51.622,-24.042,,Paraná,forest,PR,0.0,30,100.0
+491,-51.947,-24.016,,Paraná,forest,PR,0.0,30,100.0
+492,-52.194,-23.825,,Paraná,forest,PR,0.51,29,99.51
+493,-52.117,-23.674,,Paraná,forest,PR,0.0,30,100.0
+494,-52.606,-23.443,,Paraná,forest,PR,0.73,28,99.32
+495,-52.665,-23.324,,Paraná,forest,PR,0.0,30,100.0
+496,-53.316,-23.199,,Paraná,forest,PR,0.0,30,100.0
+497,-54.563,-22.971,,Paraná,forest,MS,5.57,26,95.18
+498,-52.763,-24.867,,Paraná,forest,PR,0.0,30,100.0
+499,-52.309,-24.728,,Paraná,forest,PR,0.0,30,100.0
+500,-52.703,-24.749,,Paraná,forest,PR,0.0,30,100.0
+501,-52.902,-24.554,,Paraná,forest,PR,0.0,30,100.0
+502,-53.128,-24.558,,Paraná,forest,PR,0.0,30,100.0
+503,-53.161,-24.378,,Paraná,forest,PR,0.0,30,100.0
+504,-53.134,-23.919,,Paraná,forest,PR,0.0,30,100.0
+505,-53.324,-24.133,,Paraná,forest,PR,0.0,30,100.0
+506,-53.327,-24.204,,Paraná,forest,PR,0.0,30,100.0
+507,-53.746,-24.188,,Paraná,forest,PR,0.0,30,100.0
+508,-54.283,-24.076,,Paraná,forest,PR,0.0,30,100.0
+509,-49.145,-25.519,,Paraná,forest,PR,0.0,30,100.0
+510,-49.229,-25.59,,Paraná,forest,PR,6.39,27,94.25
+511,-49.513,-25.606,,Paraná,forest,PR,0.0,30,100.0
+512,-49.584,-25.58,,Paraná,forest,PR,0.0,30,100.0
+513,-49.626,-26.2,,Paraná,forest,PR,3.9,26,96.62
+514,-49.603,-26.216,,Paraná,forest,PR,0.84,29,99.19
+515,-49.393,-25.934,,Paraná,forest,PR,0.0,30,100.0
+516,-49.526,-25.856,,Paraná,forest,PR,0.0,30,100.0
+517,-50.59,-26.022,,Paraná,forest,SC,0.0,30,100.0
+518,-51.078,-26.228,,Paraná,forest,PR,0.0,30,100.0
+519,-51.219,-26.177,,Paraná,forest,PR,0.0,30,100.0
+520,-52.295,-26.278,,Paraná,forest,PR,0.0,30,100.0
+521,-52.801,-26.051,,Paraná,forest,PR,0.0,30,100.0
+522,-53.02,-26.153,,Paraná,forest,PR,0.0,30,100.0
+523,-52.927,-25.769,,Paraná,forest,PR,0.0,30,100.0
+524,-53.519,-25.435,,Paraná,forest,PR,0.0,30,100.0
+525,-56.108,-15.617,,Paraguai,Cerrado,MT,0.0,30,100.0
+526,-57.892,-21.699,,Paraguai,antanal,MS,0.26,28,99.76
+527,-49.802,-28.369,,Uruguai,forest,SC,0.96,27,99.14
+528,-50.302,-28.439,,Uruguai,forest,RS,0.84,27,99.24
+529,-50.06,-28.091,,Uruguai,forest,SC,1.41,27,98.74
+530,-50.443,-28.161,,Uruguai,forest,SC,2.81,25,97.66
+531,-49.778,-27.803,,Uruguai,forest,SC,0.0,30,100.0
+532,-49.629,-27.828,,Uruguai,forest,SC,0.0,30,100.0
+533,-49.839,-27.702,,Uruguai,forest,SC,0.0,30,100.0
+534,-50.391,-27.485,,Uruguai,forest,SC,0.0,30,100.0
+535,-50.754,-27.334,,Uruguai,forest,SC,0.0,30,100.0
+536,-50.861,-27.539,,Uruguai,forest,SC,0.0,30,100.0
+537,-51.753,-27.878,,Uruguai,forest,RS,1.41,27,98.74
+538,-51.886,-27.707,,Uruguai,forest,RS,0.0,30,100.0
+539,-51.858,-27.562,,Uruguai,forest,RS,0.0,30,100.0
+540,-51.076,-26.896,,Uruguai,forest,SC,0.27,29,99.74
+541,-51.258,-27.088,,Uruguai,forest,SC,0.28,29,99.73
+542,-51.527,-27.316,,Uruguai,forest,SC,2.53,27,97.72
+543,-52.183,-26.949,,Uruguai,forest,SC,0.17,28,99.84
+544,-52.367,-26.97,,Uruguai,forest,SC,0.17,28,99.84
+545,-52.523,-27.165,,Uruguai,forest,SC,0.18,28,99.83
+546,-52.326,-26.561,,Uruguai,forest,SC,1.12,28,98.95
+547,-52.026,-26.772,,Uruguai,forest,SC,1.11,29,98.92
+548,-52.75,-26.761,,Uruguai,forest,SC,0.0,30,100.0
+549,-52.734,-26.817,,Uruguai,forest,SC,0.0,30,100.0
+550,-52.902,-26.737,,Uruguai,forest,SC,1.41,27,98.74
+551,-52.904,-26.86,,Uruguai,forest,SC,1.53,27,98.62
+552,-53.009,-26.924,,Uruguai,forest,SC,0.0,30,100.0
+553,-52.954,-27.041,,Uruguai,forest,SC,0.0,30,100.0
+554,-53.229,-27.175,,Uruguai,forest,RS,0.0,30,100.0
+555,-53.028,-27.815,,Uruguai,forest,RS,0.0,30,100.0
+556,-53.32,-27.278,,Uruguai,forest,RS,0.0,30,100.0
+557,-53.295,-27.013,,Uruguai,forest,SC,0.16,29,99.85
+558,-53.286,-26.682,,Uruguai,forest,SC,0.0,30,100.0
+559,-53.644,-27.333,,Uruguai,forest,RS,0.0,30,100.0
+560,-53.728,-27.825,,Uruguai,forest,RS,0.0,30,100.0
+561,-53.88,-27.392,,Uruguai,forest,RS,0.0,30,100.0
+562,-54.464,-27.674,,Uruguai,forest,RS,0.0,30,100.0
+563,-54.556,-27.845,,Uruguai,forest,RS,0.45,29,99.57
+564,-55.027,-27.851,,Uruguai,forest,RS,0.56,29,99.46
+565,-54.755,-28.062,,Uruguai,forest,RS,0.0,30,100.0
+566,-54.94,-27.931,,Uruguai,forest,RS,0.0,30,100.0
+567,-55.643,-28.179,,Uruguai,Pampa,RS,7.5,27,93.25
+568,-54.915,-30.242,,Uruguai,Pampa,RS,2.0,27,98.2
+569,-57.097,-29.741,,Uruguai,Pampa,RS,0.0,30,100.0
+570,-49.34,-24.756,,Southeast Atlantic,forest,PR,0.0,30,100.0
+571,-49.263,-24.827,,Southeast Atlantic,forest,PR,0.25,29,99.76
+572,-49.0,-24.656,,Southeast Atlantic,forest,PR,0.39,28,99.63
+573,-48.483,-25.213,,South Atlantic,forest,PR,0.0,30,100.0
+574,-48.834,-25.472,,South Atlantic,forest,PR,0.0,30,100.0
+575,-49.292,-26.424,,South Atlantic,forest,SC,0.0,30,100.0
+576,-49.081,-26.48,,South Atlantic,forest,SC,0.0,30,100.0
+577,-48.829,-26.446,,South Atlantic,forest,SC,0.33,29,99.68
+578,-49.995,-27.114,,South Atlantic,forest,SC,0.06,29,99.94
+579,-49.363,-27.683,,South Atlantic,forest,SC,0.0,30,100.0
+580,-49.606,-27.399,,South Atlantic,forest,SC,0.0,30,100.0
+581,-49.629,-27.208,,South Atlantic,forest,SC,0.0,30,100.0
+582,-49.833,-26.698,,South Atlantic,forest,SC,0.0,30,100.0
+583,-49.517,-27.055,,South Atlantic,forest,SC,0.0,30,100.0
+584,-49.365,-26.788,,South Atlantic,forest,SC,8.5,25,92.92
+585,-49.271,-26.742,,South Atlantic,forest,SC,0.0,30,100.0
+586,-49.237,-26.891,,South Atlantic,forest,SC,0.0,30,100.0
+587,-49.066,-26.918,,South Atlantic,forest,SC,0.0,30,100.0
+588,-48.933,-26.725,,South Atlantic,forest,SC,9.19,26,92.03
+589,-48.952,-27.415,,South Atlantic,forest,SC,0.0,30,100.0
+590,-48.934,-27.286,,South Atlantic,forest,SC,3.17,28,97.04
+591,-48.803,-27.704,,South Atlantic,forest,SC,8.51,25,92.91
+592,-49.116,-27.996,,South Atlantic,forest,SC,0.0,30,100.0
+593,-49.194,-28.209,,South Atlantic,forest,SC,0.0,30,100.0
+594,-49.106,-28.421,,South Atlantic,forest,SC,0.24,29,99.77
+595,-49.013,-28.261,,South Atlantic,forest,SC,3.34,28,96.88
+596,-49.593,-28.87,,South Atlantic,forest,SC,3.34,25,97.22
+597,-53.347,-29.627,,South Atlantic,forest,RS,0.28,29,99.73
+598,-53.375,-29.803,,South Atlantic,Pampa,RS,2.03,21,98.58
+599,-53.986,-30.232,,South Atlantic,Pampa,RS,0.0,30,100.0
+600,-52.377,-29.996,,South Atlantic,Pampa,RS,1.12,27,98.99
+601,-50.495,-28.806,,South Atlantic,forest,RS,1.29,27,98.84
+602,-50.456,-28.868,,South Atlantic,forest,RS,1.12,27,98.99
+603,-51.425,-28.74,,South Atlantic,forest,RS,0.85,27,99.24
+604,-51.608,-28.678,,South Atlantic,forest,RS,1.12,27,98.99
+605,-51.856,-28.619,,South Atlantic,forest,RS,0.0,30,100.0
+606,-51.833,-28.849,,South Atlantic,forest,RS,0.0,30,100.0
+607,-51.867,-29.169,,South Atlantic,forest,RS,0.0,30,100.0
+608,-51.953,-28.912,,South Atlantic,forest,RS,0.0,30,100.0
+609,-51.911,-29.12,,South Atlantic,forest,RS,0.0,30,100.0
+610,-51.923,-29.188,,South Atlantic,forest,RS,0.0,30,100.0
+611,-52.162,-29.216,,South Atlantic,forest,RS,0.38,28,99.64
+612,-51.387,-29.59,,South Atlantic,forest,RS,1.22,26,98.94
+613,-51.038,-29.703,,South Atlantic,forest,RS,1.41,27,98.74
+614,-51.148,-29.758,,South Atlantic,Pampa,RS,1.13,27,98.98
+615,-51.197,-30.048,,South Atlantic,Pampa,RS,9.39,19,94.05
+616,-53.268,-31.865,,South Atlantic,Pampa,RS,8.77,16,95.32
+617,-52.474,-31.712,,South Atlantic,Pampa,RS,0.28,29,99.73
+618,-52.463,-31.573,,South Atlantic,Pampa,RS,0.14,29,99.87
+619,-73.664,-7.448,,Amazon,Amazon,AC,4.43,21,96.9
+620,-49.692,-15.496,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+621,-46.492,-14.477,,Tocantins-Araguaia,Cerrado,GO,6.11,23,95.31
+622,-46.778,-13.501,,Tocantins-Araguaia,Cerrado,GO,8.72,24,93.03
+623,-48.528,-12.023,,Tocantins-Araguaia,Cerrado,TO,0.0,30,100.0
+624,-48.383,-9.568,,Tocantins-Araguaia,Cerrado,TO,0.0,30,100.0
+625,-50.172,-15.923,,Tocantins-Araguaia,Cerrado,GO,0.0,30,100.0
+626,-54.177,-15.315,,Tocantins-Araguaia,Cerrado,MT,2.51,28,97.66
+627,-47.055,-1.867,,Tocantins-Araguaia,Amazon,PA,0.0,30,100.0
+628,-47.066,-1.543,,Tocantins-Araguaia,Amazon,PA,0.0,30,100.0
+629,-47.116,-1.653,,Tocantins-Araguaia,Amazon,PA,2.21,26,98.09
+630,-46.708,-1.858,Eastern,Northeast Atlantic,Amazon,PA,0.63,27,99.43
+631,-46.493,-4.299,Eastern,Northeast Atlantic,Amazon,MA,1.07,29,98.97
+632,-43.025,-5.572,,Parnaíba,aatinga,PI,0.01,29,99.99
+633,-46.061,-20.096,,São Francisco,Cerrado,MG,3.62,22,97.34
+634,-45.663,-20.238,,São Francisco,Cerrado,MG,2.13,27,98.09
+635,-46.018,-19.888,,São Francisco,Cerrado,MG,0.27,29,99.74
+636,-44.793,-20.181,,São Francisco,Cerrado,MG,2.53,23,98.06
+637,-44.918,-20.218,,São Francisco,Cerrado,MG,0.27,29,99.74
+638,-44.893,-20.185,,São Francisco,Cerrado,MG,0.51,27,99.54
+639,-44.582,-20.068,,São Francisco,forest,MG,2.47,27,97.77
+640,-44.818,-19.743,,São Francisco,forest,MG,5.3,26,95.4
+641,-44.931,-19.694,,São Francisco,Cerrado,MG,3.14,26,97.28
+642,-45.221,-19.332,,São Francisco,Cerrado,MG,1.17,27,98.95
+643,-45.442,-19.165,,São Francisco,Cerrado,MG,4.86,21,96.59
+644,-44.073,-20.661,,São Francisco,forest,MG,0.0,30,100.0
+645,-44.165,-20.156,,São Francisco,forest,MG,0.0,30,100.0
+646,-44.348,-19.916,,São Francisco,forest,MG,0.0,30,100.0
+647,-44.485,-20.103,,São Francisco,forest,MG,0.28,28,99.74
+648,-44.436,-20.088,,São Francisco,forest,MG,0.0,30,100.0
+649,-44.409,-20.048,,São Francisco,forest,MG,0.0,30,100.0
+650,-44.365,-19.962,,São Francisco,forest,MG,0.01,29,99.99
+651,-44.551,-19.427,,São Francisco,Cerrado,MG,0.0,30,100.0
+652,-45.887,-19.396,,São Francisco,Cerrado,MG,4.99,24,96.01
+653,-45.646,-18.467,,São Francisco,Cerrado,MG,7.33,18,95.6
+654,-46.039,-18.707,,São Francisco,Cerrado,MG,0.27,29,99.74
+655,-44.944,-17.37,,São Francisco,Cerrado,MG,0.05,28,99.95
+656,-43.826,-20.02,,São Francisco,forest,MG,3.01,26,97.39
+657,-43.816,-19.705,,São Francisco,Cerrado,MG,0.56,29,99.46
+658,-43.905,-19.463,,São Francisco,Cerrado,MG,0.81,27,99.27
+659,-44.025,-19.226,,São Francisco,Cerrado,MG,0.81,26,99.3
+660,-44.153,-19.372,,São Francisco,Cerrado,MG,0.27,29,99.74
+661,-44.285,-18.603,,São Francisco,Cerrado,MG,0.29,28,99.73
+662,-44.05,-18.645,,São Francisco,Cerrado,MG,0.99,27,99.11
+663,-44.18,-17.997,,São Francisco,Cerrado,MG,1.75,26,98.48
+664,-44.376,-16.468,,São Francisco,Cerrado,MG,0.27,29,99.74
+665,-47.01,-17.914,,São Francisco,Cerrado,MG,0.27,29,99.74
+666,-46.648,-17.514,,São Francisco,Cerrado,MG,3.75,23,97.12
+667,-46.357,-17.663,,São Francisco,Cerrado,MG,7.11,16,96.21
+668,-46.587,-16.87,,São Francisco,Cerrado,MG,7.25,24,94.2
+669,-47.233,-16.209,,São Francisco,Cerrado,MG,8.98,16,95.21
+670,-46.88,-16.348,,São Francisco,Cerrado,MG,2.48,21,98.26
+671,-46.747,-16.136,,São Francisco,Cerrado,MG,2.21,27,98.01
+672,-45.759,-18.139,,São Francisco,Cerrado,MG,0.39,28,99.63
+673,-45.436,-17.121,,São Francisco,Cerrado,MG,9.61,20,93.59
+674,-44.523,-14.265,,São Francisco,Cerrado,BA,0.27,29,99.74
+675,-44.638,-13.34,,São Francisco,Cerrado,BA,0.0,30,100.0
+676,-44.562,-13.285,,São Francisco,Cerrado,BA,0.0,30,100.0
+677,-44.569,-13.453,,São Francisco,Cerrado,BA,0.57,28,99.46
+678,-44.303,-13.559,,São Francisco,Cerrado,BA,0.32,27,99.71
+679,-45.086,-12.431,,São Francisco,Cerrado,BA,3.79,25,96.84
+680,-45.123,-12.411,,São Francisco,Cerrado,BA,0.17,27,99.84
+681,-44.954,-12.406,,São Francisco,Cerrado,BA,6.68,25,94.43
+682,-45.103,-12.137,,São Francisco,Cerrado,BA,4.38,28,95.91
+683,-45.608,-11.894,,São Francisco,Cerrado,BA,1.09,28,98.99
+684,-45.12,-11.854,,São Francisco,Cerrado,BA,5.27,27,95.26
+685,-45.532,-11.008,,São Francisco,Cerrado,BA,0.0,30,100.0
+686,-43.135,-11.094,,São Francisco,Cerrado,BA,9.71,20,93.53
+687,-42.343,-10.984,,São Francisco,aatinga,BA,5.82,23,95.54
+688,-38.528,-8.174,,São Francisco,aatinga,PE,6.54,19,95.86
+689,-40.067,-15.392,,East Atlantic,forest,BA,1.74,28,98.37
+690,-43.158,-22.142,,Southeast Atlantic,forest,RJ,7.18,11,97.37
+691,-42.521,-22.228,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+692,-42.135,-22.024,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+693,-42.356,-21.952,,Southeast Atlantic,forest,RJ,0.0,30,100.0
+694,-41.753,-21.642,,Southeast Atlantic,forest,RJ,0.01,29,99.99
+695,-47.557,-17.504,,Paraná,Cerrado,GO,9.37,27,91.56
+696,-48.21,-15.7,,Paraná,Cerrado,DF,0.0,30,100.0
+697,-47.879,-15.713,,Paraná,Cerrado,DF,0.82,29,99.21
+698,-47.911,-15.728,,Paraná,Cerrado,DF,0.0,30,100.0
+699,-47.898,-15.873,,Paraná,Cerrado,DF,0.45,29,99.57
+700,-47.858,-15.856,,Paraná,Cerrado,DF,0.0,30,100.0
+701,-47.801,-16.538,,Paraná,Cerrado,GO,1.85,25,98.46
+702,-48.138,-17.132,,Paraná,Cerrado,GO,7.47,25,93.78
+703,-45.168,-21.258,,Paraná,forest,MG,5.83,27,94.75
+704,-46.123,-21.788,,Paraná,forest,MG,0.28,29,99.73
+705,-48.391,-19.909,,Paraná,Cerrado,MG,2.24,27,97.99
+706,-47.808,-21.698,,Paraná,Cerrado,SP,2.88,26,97.5
+707,-48.8,-21.078,,Paraná,forest,SP,1.65,27,98.51
+708,-45.844,-23.529,,Paraná,forest,SP,6.8,24,86.56
+709,-46.16,-23.522,,Paraná,forest,SP,2.0,28,98.13
+710,-47.756,-23.399,,Paraná,forest,SP,9.65,24,92.28
+711,-46.83,-22.984,,Paraná,forest,SP,1.96,25,90.04
+712,-48.276,-21.871,,Paraná,Cerrado,SP,3.41,27,96.93
+713,-50.292,-21.714,,Paraná,forest,SP,3.61,26,96.87
+714,-50.909,-22.532,,Paraná,Cerrado,SP,5.65,20,96.23
+715,-50.288,-23.088,,Paraná,forest,PR,0.27,29,99.74
+716,-50.693,-24.033,,Paraná,forest,PR,2.2,21,98.46
+717,-49.355,-25.613,,Paraná,forest,PR,1.41,27,98.73
+718,-51.142,-26.03,,Paraná,forest,PR,6.35,24,94.92
+719,-52.213,-25.493,,Paraná,forest,PR,0.16,29,99.84
+720,-56.814,-14.453,,Paraguai,Amazon,MT,2.59,23,98.01
+721,-57.083,-15.166,,Paraguai,Amazon,MT,7.13,17,95.96
+722,-56.131,-14.655,,Paraguai,Cerrado,MT,6.92,27,93.77
+723,-53.781,-28.287,,Uruguai,forest,RS,6.38,21,95.53
+724,-54.031,-28.385,,Uruguai,forest,RS,1.2,28,98.88
+725,-54.914,-28.578,,Uruguai,Pampa,RS,2.37,25,98.02
+726,-54.343,-29.556,,Uruguai,Pampa,RS,0.73,28,99.32
+727,-54.903,-30.279,,Uruguai,Pampa,RS,4.4,19,97.21
+728,-54.688,-29.5,,Uruguai,forest,RS,2.5,23,98.08
+729,-54.737,-29.363,,Uruguai,forest,RS,0.91,27,99.18
+730,-48.105,-24.52,,Southeast Atlantic,forest,SP,9.54,24,92.37
+731,-47.838,-24.486,,Southeast Atlantic,forest,SP,2.56,25,97.87
+732,-49.602,-28.942,,South Atlantic,forest,SC,0.72,27,99.35
+733,-51.188,-29.337,,South Atlantic,forest,RS,1.23,26,98.93
+734,-50.978,-29.966,,South Atlantic,Pampa,RS,0.89,28,99.17
+735,-51.068,-29.963,,South Atlantic,Pampa,RS,0.68,28,99.36
