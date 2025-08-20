@@ -49,3 +49,9 @@ desktop.ini
 # Log Files                              #
 *.log
 logs/
+
+# Credentials
+credentials/
+
+# Cache
+.cache/

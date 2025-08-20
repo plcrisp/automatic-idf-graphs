@@ -8,6 +8,7 @@ from idf_analysis.analysis.historical.intervals import DisaggregationScenario, g
 from idf_analysis.analysis.historical.subdaily import get_max_subdaily_table
 from idf_analysis.data.processing import read_csv, verification, fill_missing_data
 from idf_analysis.analysis.historical.validation import max_annual_precipitation
+from .data.api.climbra import get_climbra_data
 
 
 
@@ -27,12 +28,12 @@ aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inme
 #finalizar_requisicao_por_id(53794, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
 #cemaden = get_cemaden_data()
 
-inmet_df = read_csv(path='results/inmet_santana/inmet_santana_daily.csv')
+#inmet_df = read_csv(path='results/inmet_santana/inmet_santana_daily.csv')
 
 
-incomplete_subdaily_inmet = max_annual_precipitation(df=inmet_df, name_file='inmet_santana', output_dir='results/inmet_santana')
+#incomplete_subdaily_inmet = max_annual_precipitation(df=inmet_df, name_file='inmet_santana', output_dir='results/inmet_santana')
         
-eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
+#eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
 
 #finalizar_requisicao_por_id(49444, {'codestacao': '120070801A', 'id_tipoestacao': 1, 'nome': 'Cageacre'}, 'XAPURI')
 #finalizar_requisicao_por_id(53605, {'codestacao': '350570802A', 'id_tipoestacao': 1, 'nome': 'Parque Imperial'}, 'BARUERI')
@@ -182,3 +183,4 @@ get_final_idf(
 plot_comparative_absolute(entries=[{"name_file": "inmet_santana", "directory": "results/inmet_santana"},
     {"name_file": "cemaden_santana", "directory": "results/cemaden_santana"}],var_value=0.2,intervalos=['Max_24h', 'Max_1h'], output_directory='results/graphs/comparative_graphs')
 '''
+result = get_climbra_data()
