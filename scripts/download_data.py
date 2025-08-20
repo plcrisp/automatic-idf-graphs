@@ -1,5 +1,6 @@
 from idf_analysis.data.api.cemaden import get_cemaden_data
 from idf_analysis.data.api.inmet import get_inmet_data
+from idf_analysis.data.api.climbra import get_climbra_data
 
 import questionary
 from dotenv import load_dotenv
@@ -12,13 +13,15 @@ load_dotenv(dotenv_path=os.path.join(project_root, ".env"))
 def main():
     escolha = questionary.select(
         "Qual base de dados deseja baixar?",
-        choices=["CEMADEN", "INMET"]
+        choices=["CEMADEN", "INMET", "CLIMBra"]
     ).ask()
 
     if escolha == "CEMADEN":
         get_cemaden_data()
     elif escolha == "INMET":
         get_inmet_data()
+    elif escolha == "CLIMBra":
+        get_climbra_data()
     else:
         print("Nenhuma opção válida selecionada. Encerrando.")
 
