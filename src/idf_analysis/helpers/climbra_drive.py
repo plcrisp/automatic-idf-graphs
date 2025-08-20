@@ -126,9 +126,9 @@ def extract_climbra_from_drive(selection_info: dict,
     df_selected = df_selected.rename(columns={col_name: "Precipitation"})
 
     # salva resultado em CSV (em vez de parquet)
-    output_dir = f"{output_dir}/{scenario}"
+    output_dir = f"{output_dir}/CABra{catch_id}/{scenario}"
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, f"{scenario}_CABra{catch_id}_{start_year}-{end_year}_daily.csv")
+    output_path = os.path.join(output_dir, f"{start_year}-{end_year}_daily.csv")
     df_selected.to_csv(output_path, index=False)
 
     return df_selected, output_path

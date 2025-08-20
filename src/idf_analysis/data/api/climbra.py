@@ -1,17 +1,11 @@
 from ...helpers.climbra_drive import extract_climbra_from_drive
 
-from datetime import datetime, timedelta
-from unidecode import unidecode
-from dotenv import load_dotenv
 from importlib import resources
 from geopy.geocoders import Nominatim
 
-import os
 import questionary
 import pandas as pd
 import numpy as np
-import requests
-import re
 import time
 
 
@@ -241,8 +235,8 @@ def get_climbra_data():
         "Escolha o tipo de dados:",
         choices=[
             "📚 Dados Históricos (1980-2013)",
-            "🌡️  Projeção SSP245 (2015-2100)",
-            "🔥 Projeção SSP585 (2015-2100)"
+            "🌡️  Projeção SSP245 (2015-2100, cenário otimista)",
+            "🔥 Projeção SSP585 (2015-2100, cenário pessimista)"
         ]
     ).ask()
     
