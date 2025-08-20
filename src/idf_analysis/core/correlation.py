@@ -50,12 +50,11 @@ def left_join_precipitation(*dfs):
 
 def correlation_plots(*dfs, sample_max=5000, log_transform=True, add_regression=True):
     """
-    Gera pairplots e calcula correlação entre séries de precipitação.
+    Mede correlação entre séries de precipitação.
     
-    Melhorias:
-    - Agregação automática diária
-    - Pairplot com log opcional e linha de regressão
-    - Amostragem para datasets grandes
+    - Agrega dados horários para diário
+    - Plota apenas scatter com regressão (sem histogramas)
+    - Calcula correlação de Pearson e p-valores
     """
     # Junta dados de todas as estações
     df = left_join_precipitation(*dfs)
@@ -69,24 +68,27 @@ def correlation_plots(*dfs, sample_max=5000, log_transform=True, add_regression=
 
     df = df.dropna(how='all')
 
-    # Aplica log1p para visualização
+    # --- Preparação para visualização ---
     df_plot = df.copy()
     if log_transform:
         df_plot = np.log1p(df_plot)
 
-    # Amostragem para pairplot
     if len(df_plot) > sample_max:
         df_plot = df_plot.sample(n=sample_max, random_state=42)
 
-    print(f"[INFO] Gerando pairplot com {len(df_plot)} pontos...")
+    print(f"[INFO] Gerando scatter/regression com {len(df_plot)} pontos...")
     kind = 'reg' if add_regression else 'scatter'
-    sns.pairplot(df_plot, kind=kind, plot_kws={'scatter_kws': {'s': 15, 'alpha': 0.6}})
+    sns.pairplot(
+        df_plot,
+        kind=kind,
+        diag_kind=None,  # remove histogramas
+        plot_kws={'scatter_kws': {'s': 15, 'alpha': 0.6}}
+    )
+    plt.suptitle("Correlação entre Estações (log1p)", y=1.02)
     plt.show()
 
-    # Matriz de correlação
+    # --- Matriz de correlação ---
     corr_pearson = df.corr(method='pearson')
-
-    # Matriz de p-valores
     pvalues_pearson = pd.DataFrame(np.ones_like(corr_pearson), columns=df.columns, index=df.columns)
     cols = df.columns
     for i in range(len(cols)):
