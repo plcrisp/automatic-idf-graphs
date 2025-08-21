@@ -16,11 +16,8 @@ Bibliotecas utilizadas:
 
 import pandas as pd
 import os
-import re
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-from typing import Literal
+from typing import Literal, Optional
 from pathlib import Path
 from datetime import date, datetime
 from sklearn.ensemble import RandomForestRegressor
@@ -277,50 +274,53 @@ def interpolate_by_frequency(df, frequency: Literal["yearly", "monthly", "daily"
 
 
 
-def fill_missing_data(path_main, path_secondary=None, overwrite=False, frequency: Literal["yearly", "monthly", "daily", "hourly"] = "daily"):
+def fill_missing_data(
+    df_main: pd.DataFrame,
+    df_secondary: Optional[pd.DataFrame] = None,
+    frequency: Literal["yearly", "monthly", "daily", "hourly"] = "daily",
+) -> pd.DataFrame:
     """
     Preenche os valores faltantes na coluna 'Precipitation' de um DataFrame.
 
-    Usa interpolação por frequência ou Random Forest com base no path_secondary.
+    Usa interpolação por frequência ou Random Forest com base em um segundo DataFrame.
 
-    Parâmetros:
+    Parâmetros
     ----------
-    path_main : str
-        Caminho para o CSV principal com valores faltantes.
-    path_secondary : str, opcional
-        Caminho para um segundo CSV com dados mais completos.
-    overwrite : bool, opcional
-        Se True, sobrescreve o CSV original.
+    df_main : pd.DataFrame
+        DataFrame principal com valores faltantes.
+    df_secondary : pd.DataFrame, opcional
+        DataFrame secundário com dados mais completos.
     frequency : str
         Uma entre: 'yearly', 'monthly', 'daily', 'hourly'.
 
-    Retorna:
+    Retorna
     -------
-    df_main : pandas.DataFrame
+    df_main : pd.DataFrame
         DataFrame com a coluna 'Precipitation' preenchida.
     """
-    df_main = set_date(read_csv(path_main))
+    df_main = set_date(df_main)
 
-    if path_secondary:
-        df_secondary = set_date(read_csv(path_secondary))
+    if df_secondary is not None:
+        df_secondary_copy = df_secondary.copy()
+        df_secondary_copy = set_date(df_secondary_copy)
 
         # Verificações mínimas
         required = {'Year', 'Month', 'Day', 'Precipitation'}
-        if not required.issubset(df_main.columns) or not required.issubset(df_secondary.columns):
+        if not required.issubset(df_main.columns) or not required.issubset(df_secondary_copy.columns):
             raise ValueError(f"Colunas obrigatórias ausentes: {required}")
 
-        has_hour = frequency == 'hourly' and 'Hour' in df_main.columns and 'Hour' in df_secondary.columns
+        has_hour = frequency == 'hourly' and 'Hour' in df_main.columns and 'Hour' in df_secondary_copy.columns
 
         # Cria chave única para merge
         if has_hour:
             df_main['Key'] = pd.to_datetime(df_main[['Year', 'Month', 'Day', 'Hour']]).dt.strftime('%Y-%m-%d %H:%M')
-            df_secondary['Key'] = pd.to_datetime(df_secondary[['Year', 'Month', 'Day', 'Hour']]).dt.strftime('%Y-%m-%d %H:%M')
+            df_secondary_copy['Key'] = pd.to_datetime(df_secondary_copy[['Year', 'Month', 'Day', 'Hour']]).dt.strftime('%Y-%m-%d %H:%M')
         else:
             df_main['Key'] = pd.to_datetime(df_main[['Year', 'Month', 'Day']]).dt.strftime('%Y-%m-%d')
-            df_secondary['Key'] = pd.to_datetime(df_secondary[['Year', 'Month', 'Day']]).dt.strftime('%Y-%m-%d')
+            df_secondary_copy['Key'] = pd.to_datetime(df_secondary_copy[['Year', 'Month', 'Day']]).dt.strftime('%Y-%m-%d')
 
         merged = df_main[['Key', 'Precipitation']].merge(
-            df_secondary[['Key', 'Precipitation']],
+            df_secondary_copy[['Key', 'Precipitation']],
             on='Key',
             how='left',
             suffixes=('_main', '_sec')
@@ -370,16 +370,6 @@ def fill_missing_data(path_main, path_secondary=None, overwrite=False, frequency
     else:
         interpolated = interpolate_by_frequency(df_main, frequency)
         df_main['Precipitation'] = interpolated
-
-    if overwrite:
-        df_main.to_csv(path_main, index=False)
-
-        filename = os.path.basename(path_main)
-        directory = os.path.dirname(path_main)
-        name = os.path.splitext(filename)[0]
-        name = re.sub(r'_(daily|yearly|monthly|hourly)$', '', name)
-
-        aggregate_to_csv(df=df_main, name=name, directory=directory)
 
     return df_main
 

@@ -10,7 +10,7 @@ def set_date(df):
     Padroniza DataFrame de precipitação:
     - Cria coluna 'Date' a partir de Year/Month/Day/(Hour)
     - Agrega por data somando 'Precipitation'
-    """
+    """    
     has_hour = 'Hour' in df.columns
 
     # Criação do datetime seguro

@@ -114,75 +114,71 @@ def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Lit
 
 
 def process_precipitation_series(
-    file_names: List[str],
+    dataframes: List[pd.DataFrame],
     frequency: Literal["daily", "hourly"] = "daily",
     plot: bool = True,
     return_fig: bool = False
 ) -> Tuple[pd.DataFrame, Optional[Tuple[plt.Figure, List[plt.Axes]]]]:
     """
-    Processa séries temporais de precipitação e retorna o DataFrame final,
+    Processa séries temporais de precipitação a partir de DataFrames e retorna o DataFrame final,
     com opção de plotar os gráficos de dupla massa ou retorná-los.
 
-    Parâmetros:
-    - file_names: Lista com os nomes dos arquivos CSV.
-    - frequency: Frequência dos dados ("daily" ou "hourly").
-    - plot: Se True, gera os gráficos com visualização padrão.
-    - return_fig: Se True, retorna fig e axes para customização posterior.
+    Parâmetros
+    ----------
+    dataframes : list[pd.DataFrame]
+        Lista de DataFrames das estações.
+    frequency : str
+        Frequência dos dados ("daily" ou "hourly").
+    plot : bool
+        Se True, gera os gráficos com visualização padrão.
+    return_fig : bool
+        Se True, retorna fig e axes para customização posterior.
 
-    Retorna:
-    - df: DataFrame com séries unidas e colunas de precipitação acumulada.
-    - (fig, axes): Se return_fig=True, retorna objetos de plotagem.
+    Retorna
+    -------
+    df : pd.DataFrame
+        DataFrame com séries unidas e colunas de precipitação acumulada.
+    (fig, axes) : tuple, opcional
+        Se return_fig=True, retorna objetos de plotagem.
     """
 
-    def load_and_verify(file_name):
-        print(f"[INFO] Lendo e verificando: {file_name}")
-        df = read_csv(file_name)
+    verification_results = []
+    processed_dfs: List[pd.DataFrame] = []
+
+    # Verificação e preenchimento de dados
+    for df in dataframes:
         result = verification(df, frequency=frequency)
-        return df, result["status"]
+        verification_results.append(result["status"])
+        processed_dfs.append(df)
 
-    verification_results = {}
-    dataframes: Dict[str, pd.DataFrame] = {}
+    complete_idx = [i for i, status in enumerate(verification_results) if status == 'complete']
+    incomplete_idx = [i for i, status in enumerate(verification_results) if status == 'incomplete']
 
-    for name in file_names:
-        df, status = load_and_verify(name)
-        dataframes[name] = df
-        verification_results[name] = status
+    if complete_idx:
+        ref_idx = complete_idx[0]
+        reference = processed_dfs[ref_idx]
+        for i in incomplete_idx:
+            processed_dfs[i] = fill_missing_data(processed_dfs[i], df_secondary=reference, frequency=frequency)
+    elif incomplete_idx:
+        for i in incomplete_idx:
+            processed_dfs[i] = fill_missing_data(processed_dfs[i], frequency=frequency)
 
-    complete_paths = [name for name, status in verification_results.items() if status == 'complete']
-    incomplete_paths = [name for name, status in verification_results.items() if status == 'incomplete']
-
-    if complete_paths:
-        reference = complete_paths[0]
-        print(f"[INFO] Usando '{reference}' como referência para preenchimento.")
-        for name in incomplete_paths:
-            print(f"[INFO] Preenchendo '{name}' com base em '{reference}'...")
-            dataframes[name] = fill_missing_data(path_main=name, path_secondary=reference, frequency=frequency, overwrite=False)
-    elif incomplete_paths:
-        print("[INFO] Nenhum dataset completo encontrado. Preenchendo todos individualmente...")
-        for name in incomplete_paths:
-            print(f"[INFO] Preenchendo '{name}' individualmente...")
-            dataframes[name] = fill_missing_data(path_main=name, frequency=frequency)
-    else:
-        print("[INFO] Todos os datasets estão completos.")
-
-    print(f"[INFO] Unindo séries e calculando média {'horária' if frequency == 'hourly' else 'diária'}...")
-
-    df = left_join_precipitation(*dataframes.values())
-    df.columns = ['Date'] + [f"P_{i}" for i in range(len(file_names))]  # P_0, P_1, ...
+    # Unindo séries
+    df = left_join_precipitation(*processed_dfs)
+    df.columns = ['Date'] + [f"P_{i}" for i in range(len(processed_dfs))]
     df = df.dropna()
     df['P_average'] = df.iloc[:, 1:].mean(axis=1)
 
+    # Cálculo acumulado
     for col in df.columns[1:]:
         df[f'Pacum_{col}'] = df[col].fillna(0).cumsum()
 
     fig, axes = None, []
 
     if plot or return_fig:
-        print("[INFO] Gerando gráficos de dupla massa...")
         sns.set_context("talk", font_scale=0.8)
-        fig, axes = plt.subplots(1, len(file_names), figsize=(6 * len(file_names), 5), sharey=True)
-
-        if len(file_names) == 1:
+        fig, axes = plt.subplots(1, len(processed_dfs), figsize=(6 * len(processed_dfs), 5), sharey=True)
+        if len(processed_dfs) == 1:
             axes = [axes]
 
         for i, ax in enumerate(axes):
@@ -199,7 +195,6 @@ def process_precipitation_series(
             ax.set_title(f"Dupla Massa - Estação {i}")
 
         plt.tight_layout()
-
         if plot:
             plt.show()
 

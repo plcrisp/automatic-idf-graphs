@@ -359,65 +359,43 @@ def get_top_fitted_distributions(data, results, n, distributions=None):
 
 
 
-def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory='../results', distributions=None, plot=True):
+def get_distribution(data_df: pd.DataFrame,
+    column_name: str,
+    n: int = 3,
+    distributions=None,
+    plot: bool = True,
+    output_csv: str = None
+):
     """
-    Função principal para carregar, analisar e ajustar distribuições a dados de precipitação (diários ou subdiários).
+    Ajusta distribuições a dados de precipitação a partir de um DataFrame.
 
-    O processo inclui:
-    1. Carregar os dados de precipitação.
-    2. Ajustar distribuições selecionadas aos dados (usando distribuições comuns pré-definidas).
-    3. Gerar histogramas e realizar testes de bondade de ajuste.
-    4. Obter parâmetros das distribuições ajustadas e salvar os resultados.
+    Parâmetros
+    ----------
+    data_df : pd.DataFrame
+        DataFrame contendo a coluna de precipitação.
+    column_name : str
+        Nome da coluna no DataFrame que contém os valores a serem ajustados.
+    n : int
+        Número de distribuições mais ajustadas a serem analisadas e exibidas. Padrão é 3.
+    distributions : list of CommonDistributions, opcional
+        Lista de distribuições específicas a serem utilizadas.
+    plot : bool
+        Se True, gera histogramas e comparações de CDF.
+    output_csv : str, opcional
+        Caminho para salvar os parâmetros ajustados em CSV. Se None, não salva.
 
-    Parâmetros:
-        name_file (str): Nome base do arquivo de dados (sem extensão).
-        duration (str, optional): Duração do evento de precipitação (ex.: 'Max_1h', 'Max_24h'). 
-                                  Se None, assume-se que os dados são diários.
-        disag_factor (float, optional): Fator de desagregação para nomear arquivos subdiários (ex.: '_p0.2', '_m0.3'). 
-                                       Ignorado se `duration` for None.
-        directory (str): Diretório onde os arquivos estão localizados. Padrão é 'results'.
-        n (int): Número de distribuições mais ajustadas a serem analisadas e exibidas. Padrão é 3.
-        distributions (list of CommonDistributions, optional): Lista de distribuições específicas a serem utilizadas. 
-                                                               Se fornecida, ignora `n_distributions`.
-
-    Retorna:
-        scipy.stats.rv_continuous: O objeto da distribuição Scipy que melhor se ajustou aos dados.
-                                   Retorna None se ocorrer um erro.
+    Retorna
+    -------
+    best_dist_object : scipy.stats.rv_continuous ou None
+        Objeto da distribuição Scipy melhor ajustada, ou None se falhar.
     """
-    # ... (toda a parte inicial da função permanece igual até a leitura dos dados)
     import traceback
 
-    if distributions is None:
-        if not isinstance(n, int) or n <= 0:
-            raise ValueError("O parâmetro 'n' deve ser um número inteiro positivo.")
-
-    # Constrói o caminho do arquivo de entrada
-    if duration is None:
-        file_path = f'{directory}/max_daily_{name_file}.csv'
-        column_name = 'Precipitation'
-    else:
-        if disag_factor is None:
-            raise ValueError("O parâmetro 'disag_factor' deve ser fornecido quando 'duration' é especificado.")
-        file_path = f'{directory}/max_subdaily_{name_file}_{disag_factor}.csv'
-        column_name = duration
-
-    # Carregando dados
-    try:
-        data_df_original = pd.read_csv(file_path)
-    except FileNotFoundError:
-        print(f"[ERRO] O arquivo '{file_path}' não foi encontrado.")
-        return None
-    except Exception as e:
-        print(f"[ERRO] Falha ao ler CSV: {e}")
-        traceback.exc()
+    if column_name not in data_df.columns:
+        print(f"[ERRO] A coluna '{column_name}' não foi encontrada no DataFrame.")
         return None
 
-    if column_name not in data_df_original.columns:
-        print(f"[ERRO] A coluna '{column_name}' não foi encontrada no arquivo.")
-        return None
-
-    data_df = data_df_original[[column_name]]
-    data = data_df.values.ravel()
+    data = data_df[[column_name]].values.ravel()
 
     # Ajuste das distribuições
     results = fit_data(data, distributions=distributions)
@@ -434,8 +412,9 @@ def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory
     # Tabela de parâmetros
     df_parameters = get_top_fitted_distributions(data, results, n=n, distributions=distributions)
 
-    output_file = f'{directory}/{name_file}_dist_params.csv'
-    df_parameters.to_csv(output_file, index=False)
+    # Salvar CSV se solicitado
+    if output_csv is not None:
+        df_parameters.to_csv(output_csv, index=False)
 
     if df_parameters.empty:
         return None
@@ -449,14 +428,13 @@ def get_distribution(name_file, n=3, duration=None, disag_factor=None, directory
 
     # Converte para dicionário e remove chaves indesejadas
     params_dict = best_fit_series.drop(['distribution', 'sse']).dropna().to_dict()
-    params_dict.pop('distribution_object', None)  # <- Remove chave extra
+    params_dict.pop('distribution_object', None)
 
     # Ajuste especial para lognorm
     if dist_name == 'lognorm' and 'c' in params_dict:
         params_dict['s'] = params_dict.pop('c')
 
     try:
-        # Cria a versão congelada da distribuição
         best_dist_object = dist_class(**params_dict)
         return best_dist_object
     except (AttributeError, TypeError) as e:
