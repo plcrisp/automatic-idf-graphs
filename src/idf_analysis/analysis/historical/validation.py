@@ -74,7 +74,6 @@ def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Lit
     Retorna:
     - DataFrame com os valores máximos de precipitação anual, excluindo outliers.
     """
-    print(f"\n[INFO] Calculando máximos anuais para '{name_file}' com frequência: '{frequency}'")
 
     df = df.dropna()
 
@@ -86,7 +85,6 @@ def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Lit
 
         # Agrupar por data (Year, Month, Day) e somar a precipitação diária
         df_daily = df.groupby(['Year', 'Month', 'Day'], as_index=False)['Precipitation'].sum()
-        print(f"[INFO] Dados horários agregados em {len(df_daily)} dias.")
     elif frequency == 'daily':
         df_daily = df.copy()
         if 'Month' not in df_daily.columns or 'Day' not in df_daily.columns:
@@ -97,18 +95,15 @@ def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Lit
 
     # Agrupar por ano e pegar o valor máximo
     df_max = df_daily.groupby('Year')['Precipitation'].max().reset_index()
-    print(f"[INFO] Máximos anuais calculados para {df_max.shape[0]} anos.")
     
     # Remover outliers usando a função auxiliar caso especificado
     if not outliers:
         df_clean = remove_outliers_from_max(df_max)
-        print(f"[INFO] Após remoção de outliers: {df_clean.shape[0]} anos restantes.")
 
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'max_daily_{name_file}.csv')
     df_clean.to_csv(output_path, index=False)
 
-    print(f"[OK] Arquivo salvo em: {output_path}\n")
     return df_clean
 
 

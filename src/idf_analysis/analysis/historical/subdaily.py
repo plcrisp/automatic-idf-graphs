@@ -70,14 +70,11 @@ def get_max_subdaily_table(df, name_file='output', dt_min=False, output_dir='Res
         DataFrame: Tabela com máximos acumulados por intervalo.
     """
     
-    print(f"\n[INFO] Iniciando cálculo de máximos subdiários para: '{name_file}'")
 
     if not dt_min:
         intervals = [1, 3, 6, 8, 10, 12, 24]
-        print(f"[INFO] Dados considerados como horários. Intervalos: {intervals}h")
     else:
         intervals = [5, 10, 15, 20, 25, 30]
-        print(f"[INFO] Dados considerados como minutais. Intervalos: {intervals}min")
 
     if df.empty:
         print(f"[ERRO] DataFrame vazio fornecido. Encerrando.")
@@ -85,15 +82,11 @@ def get_max_subdaily_table(df, name_file='output', dt_min=False, output_dir='Res
 
     df_final = pd.DataFrame({'Year': df['Year'].unique()})
     
-    print("[INFO] Calculando máximos para cada intervalo...")
-
     for interval in intervals:
         if not dt_min:
             max_subdaily = get_subdaily_extremes(df, interval)
-            print(f"[OK] Intervalo {interval}h concluído.")
         else:
             max_subdaily = get_subdaily_extremes(df, interval, dt_min=dt_min)
-            print(f"[OK] Intervalo {interval}min concluído.")
 
         df_final = df_final.merge(max_subdaily, on='Year', how='inner')
 
@@ -107,7 +100,6 @@ def get_max_subdaily_table(df, name_file='output', dt_min=False, output_dir='Res
 
     df_final.to_csv(output_path, index=False)
     print(f"\n[OK] Resultados salvos em: {output_path}")
-    print("[INFO] Cálculo de máximos subdiários finalizado com sucesso.\n")
 
     return df_final
     
