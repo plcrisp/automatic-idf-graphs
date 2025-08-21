@@ -1,7 +1,9 @@
 import pandas as pd
 
 def precip_summary(df, name):
-    # Criar coluna de data
+    # Crie uma cópia para não modificar o DataFrame original
+    df = df.copy()
+    
     if 'Hour' in df.columns:
         df['Date'] = pd.to_datetime(df[['Year', 'Month', 'Day', 'Hour']])
     else:
