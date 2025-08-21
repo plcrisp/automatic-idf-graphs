@@ -60,20 +60,21 @@ def save_to_csv(df, name, var, directory):
 
 
 
-
-# Função agregada e mais flexível para salvar diferentes agregações
-def aggregate_to_csv(df, name, directory='Results'):
+def aggregate_to_csv(df, name, directory='Results', include_minutes=False, minute_freq=15):
     """
     Agrega os dados e salva em arquivos CSV anuais, mensais, diários e por hora.
+    Opcionalmente, distribui proporcionalmente para intervalos de minutos.
     
     Parâmetros:
     df (DataFrame): O DataFrame com os dados.
     name (str): Nome base para os arquivos.
     directory (str): Caminho do diretório onde salvar os resultados.
+    include_minutes (bool): Se True, cria também arquivo com distribuição por minutos.
+    minute_freq (int): Frequência em minutos para distribuição (padrão: 15).
     """
     
     # Garante que o diretório existe
-    Path(directory).mkdir(parents=True,exist_ok=True)
+    Path(directory).mkdir(parents=True, exist_ok=True)
     
     # Agrega por ano
     df_yearly = aggregate(df, ['Year'])
@@ -91,7 +92,55 @@ def aggregate_to_csv(df, name, directory='Results'):
     if 'Hour' in df.columns:
         df_hourly = aggregate(df, ['Year', 'Month', 'Day', 'Hour'])
         save_to_csv(df_hourly, name, 'hourly', directory)
+        
+        # Distribui proporcionalmente por minutos, se solicitado
+        if include_minutes:
+            df_minutes = distribute_to_minutes(df_hourly, minute_freq)
+            save_to_csv(df_minutes, name, f'{minute_freq}min', directory)
 
+
+
+def distribute_to_minutes(df_hourly, minute_freq):
+    """
+    Distribui dados horários proporcionalmente para intervalos de minutos.
+    
+    Parâmetros:
+    df_hourly (DataFrame): DataFrame com dados agregados por hora.
+    minute_freq (int): Frequência em minutos para distribuição.
+    
+    Retorna:
+    DataFrame: Dados distribuídos por intervalos de minutos.
+    """
+    
+    intervals_per_hour = 60 // minute_freq
+    
+    distributed_data = []
+    
+    for idx, row in df_hourly.iterrows():
+        values_per_interval = {}
+        for col in df_hourly.columns:
+            if col not in ['Year', 'Month', 'Day', 'Hour']:
+                values_per_interval[col] = row[col] / intervals_per_hour
+        
+        for minute_interval in range(0, 60, minute_freq):
+            minute_row = {
+                'Year': int(row['Year']),
+                'Month': int(row['Month']), 
+                'Day': int(row['Day']),
+                'Hour': int(row['Hour']),
+                'Minute': minute_interval
+            }
+            
+            minute_row.update(values_per_interval)
+            distributed_data.append(minute_row)
+    
+    df_minutes = pd.DataFrame(distributed_data)
+    
+    time_cols = ['Year', 'Month', 'Day', 'Hour', 'Minute']
+    data_cols = [col for col in df_minutes.columns if col not in time_cols]
+    df_minutes = df_minutes[time_cols + data_cols]
+    
+    return df_minutes
 
 
 

@@ -16,6 +16,8 @@ from .analysis.projection.dbc import dbc_percentilico
 
 
 from typing import Optional, List
+cemaden_df = read_csv(path='results/cemaden_ac_santana_sao/cemaden_ac_santana_sao_hourly.csv')
+aggregate_to_csv(df=cemaden_df, name='cemaden_ac_santana_sao', directory='results/cemaden_ac_santana_sao',include_minutes=True,minute_freq=5)
 #inmet_santana = process_data(source=DataSource.INMET, data_path='./datasets/INMET_DAILY_SAO_PAULO_MIRANTE/inmet_daily_sao_paulo_mirante.csv')
 #aggregate_to_csv(df=inmet_santana, name='inmet_daily_sao_paulo_mirante', directory='results/inmet_daily_sao_paulo_mirante')
 #fig, axes = eqm_downscaling(
@@ -25,16 +27,6 @@ from typing import Optional, List
   #  dir='results',
   #  plot=True,
 #)
-
-fig, axes = eqm_downscaling(
-    name_obs='inmet_daily_sao_paulo_mirante/inmet_daily_sao_paulo_mirante', 
-    name_baseline='CABra467/historical/1980-2013', 
-    name_future='CABra467/ssp245/2015-2100', 
-    dir='results', 
-    plot=True
-    )
-
-fig.show()
 
 
 '''
