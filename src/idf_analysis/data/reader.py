@@ -1,6 +1,7 @@
 from enum import Enum
 from pathlib import Path
 from collections import Counter
+from typing import Union
 
 import folium
 import os
@@ -14,10 +15,29 @@ class DataSource(Enum):
 
 
 
-def _to_number(s: pd.Series, fill_value: int = 0) -> pd.Series:
+def _to_number(
+    s: pd.Series, 
+    fill_value: Union[int, float] = 0.0, 
+    as_integer: bool = False
+) -> pd.Series:
     """
-    Converte para inteiro, substituindo valores inválidos/ausentes
-    pelo valor de 'fill_value'.
+    Converte uma série para tipo numérico (float ou int), substituindo 
+    valores inválidos/ausentes pelo valor de 'fill_value'.
+
+    Parâmetros
+    ----------
+    s : pd.Series
+        A série de entrada para conversão.
+    fill_value : Union[int, float], opcional
+        Valor para preencher os dados ausentes ou inválidos (padrão é 0.0).
+    as_integer : bool, opcional
+        Se True, converte o resultado final para inteiro. 
+        Se False (padrão), retorna como float.
+
+    Retorna
+    -------
+    pd.Series
+        A série convertida para o tipo numérico desejado.
     """
     numeric_series = pd.to_numeric(
         s.astype(str)
@@ -28,8 +48,13 @@ def _to_number(s: pd.Series, fill_value: int = 0) -> pd.Series:
         errors='coerce'
     )
     
-    # Preenche os NaN e depois converte para int
-    return numeric_series.fillna(fill_value).astype(int)
+    filled_series = numeric_series.fillna(fill_value)
+    
+    if as_integer:
+        return filled_series.astype(int)
+    else:
+        return filled_series
+
 
 
 
@@ -168,7 +193,7 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None, sh
         df['Precipitation'] = _to_number(df['Precipitation'])
         if is_hourly:
             df['Hour'] = pd.to_numeric(df['Hour'], errors='coerce') / 100.0
-            df['Hour'] = _to_number(df['Hour'])
+            df['Hour'] = _to_number(df['Hour'],as_integer=True)
 
         print("✅ Detectado:", "INMET (horário)" if is_hourly else "INMET_DAILY (diário)")
 

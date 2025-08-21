@@ -1,6 +1,7 @@
 # Importações dos módulos utilitários
 from .data.api.inmet import get_inmet_data, load_inmet_station_parameters
 from .data.api.cemaden import get_cemaden_data, finalizar_requisicao_por_id
+from .data.processing import aggregate_to_csv
 from .data.reader import process_data, DataSource
 from .analysis.projection.eqm import eqm_downscaling
 from .analysis.historical.idf import get_final_idf
@@ -14,6 +15,8 @@ from .data.api.climbra import get_climbra_data
 
 
 from typing import Optional, List
+inmet_santana = process_data(source=DataSource.INMET, data_path='./datasets/INMET_DAILY_SAO_PAULO_MIRANTE/inmet_daily_sao_paulo_mirante.csv')
+aggregate_to_csv(df=inmet_santana, name='inmet_daily_sao_paulo_mirante', directory='results/inmet_daily_sao_paulo_mirante')
 
 '''
 cemaden_santana = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='AC Santana', show_station_counts=True, generate_map=True)
@@ -183,4 +186,4 @@ get_final_idf(
 plot_comparative_absolute(entries=[{"name_file": "inmet_santana", "directory": "results/inmet_santana"},
     {"name_file": "cemaden_santana", "directory": "results/cemaden_santana"}],var_value=0.2,intervalos=['Max_24h', 'Max_1h'], output_directory='results/graphs/comparative_graphs')
 '''
-result = get_climbra_data()
+#result = get_climbra_data()
