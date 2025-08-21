@@ -114,7 +114,8 @@ def process_precipitation_series(
     dataframes: List[pd.DataFrame],
     frequency: Literal["daily", "hourly"] = "daily",
     plot: bool = True,
-    return_fig: bool = False
+    return_fig: bool = False,
+    x_axis: Optional[int] = None  # <-- agora é índice do df
 ) -> Tuple[pd.DataFrame, Optional[Tuple[plt.Figure, List[plt.Axes]]]]:
     """
     Processa séries temporais de precipitação a partir de DataFrames e retorna o DataFrame final,
@@ -130,6 +131,9 @@ def process_precipitation_series(
         Se True, gera os gráficos com visualização padrão.
     return_fig : bool
         Se True, retorna fig e axes para customização posterior.
+    x_axis : int, opcional
+        Índice da estação a ser usada no eixo X.
+        Se None, usa a média das estações como referência.
 
     Retorna
     -------
@@ -169,26 +173,36 @@ def process_precipitation_series(
     # Cálculo acumulado
     for col in df.columns[1:]:
         df[f'Pacum_{col}'] = df[col].fillna(0).cumsum()
+    df['Pacum_P_average'] = df['P_average'].fillna(0).cumsum()
+
+    # Definindo eixo X
+    if x_axis is None:
+        x_col = "Pacum_P_average"
+        x_label = "Precipitação acumulada - Média das estações (mm)"
+    else:
+        x_col = f"Pacum_P_{x_axis}"
+        x_label = f"Precipitação acumulada - Estação {x_axis} (mm)"
 
     fig, axes = None, []
 
     if plot or return_fig:
         sns.set_context("talk", font_scale=0.8)
-        fig, axes = plt.subplots(1, len(processed_dfs), figsize=(6 * len(processed_dfs), 5), sharey=True)
+        fig, axes = plt.subplots(1, len(processed_dfs), figsize=(7 * len(processed_dfs), 5), sharey=True)
         if len(processed_dfs) == 1:
             axes = [axes]
 
         for i, ax in enumerate(axes):
+            y_col = f"Pacum_P_{i}"
             sns.scatterplot(
-                x="Pacum_P_average",
-                y=f"Pacum_P_{i}",
+                x=x_col,
+                y=y_col,
                 data=df,
                 ax=ax,
                 alpha=0.5,
                 color='steelblue'
             )
-            ax.set_xlabel("Média Pacum (mm)")
-            ax.set_ylabel(f"Pacum Estação {i}")
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(f"Precipitação acumulada - Estação {i} (mm)")
             ax.set_title(f"Dupla Massa - Estação {i}")
 
         plt.tight_layout()
