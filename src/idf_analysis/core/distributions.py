@@ -430,12 +430,18 @@ def get_distribution(data_df: pd.DataFrame,
     params_dict = best_fit_series.drop(['distribution', 'sse']).dropna().to_dict()
     params_dict.pop('distribution_object', None)
 
-    # Ajuste especial para lognorm
-    if dist_name == 'lognorm' and 'c' in params_dict:
-        params_dict['s'] = params_dict.pop('c')
-
     try:
-        best_dist_object = dist_class(**params_dict)
+        # Se tiver parâmetro de forma "s" (ou "c"), trata
+        shape_params = []
+        if "s" in params_dict:
+            shape_params.append(params_dict.pop("s"))
+        elif "c" in params_dict:
+            shape_params.append(params_dict.pop("c"))
+
+        loc = params_dict.pop("loc", 0)
+        scale = params_dict.pop("scale", 1)
+
+        best_dist_object = dist_class(*shape_params, loc=loc, scale=scale)
         return best_dist_object
     except (AttributeError, TypeError) as e:
         print(f"[ERRO] Erro ao reconstruir o objeto da distribuição '{dist_name}': {e}")

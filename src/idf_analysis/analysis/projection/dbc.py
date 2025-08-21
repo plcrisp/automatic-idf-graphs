@@ -7,10 +7,9 @@ from .quantile_mapping import prepare_data_pair, prepare_future_data
 
 def dbc_percentilico(
     name_obs: str,
-    name_gcm_baseline: str,
-    name_gcm_future: str,
-    dir_obs: str = 'results',
-    dir_gcm: str = 'datasets/GCM',
+    name_baseline: str,
+    name_future: str,
+    dir: str = 'results',
     percentis: np.ndarray = np.linspace(0.01, 0.99, 99),
     plot: bool = True,
     save_csv_path: str | None = None
@@ -20,10 +19,9 @@ def dbc_percentilico(
 
     Parâmetros:
         name_obs (str): Nome do arquivo observado (sem sufixo '_daily.csv').
-        name_gcm_baseline (str): Nome do GCM baseline.
-        name_gcm_future (str): Nome do GCM futuro.
-        dir_obs (str): Diretório do observado.
-        dir_gcm (str): Diretório dos GCMs.
+        name_baseline (str): Nome do GCM baseline.
+        name_future (str): Nome do GCM futuro.
+        dir (str): Diretório do observado.
         percentis (np.ndarray): Vetor de percentis a serem usados.
         plot (bool): Se True, plota o gráfico da correção.
         save_csv_path (str | None): Caminho para salvar o CSV corrigido (opcional).
@@ -33,9 +31,9 @@ def dbc_percentilico(
     """
 
     # Caminhos
-    path_obs = f"{dir_obs}/{name_obs}_daily.csv"
-    path_baseline = f"{dir_gcm}/{name_gcm_baseline}_daily.csv"
-    path_future = f"{dir_gcm}/{name_gcm_future}_daily.csv"
+    path_obs = f"{dir}/{name_obs}_daily.csv"
+    path_baseline = f"{dir}/{name_baseline}_daily.csv"
+    path_future = f"{dir}/{name_future}_daily.csv"
 
     # Carrega os dados históricos tratados
     data_obs, data_gcm_hist, _ = prepare_data_pair(path_obs, path_baseline)

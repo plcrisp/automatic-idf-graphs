@@ -5,6 +5,7 @@ import seaborn as sns
 import os
 from typing import Tuple
 from sklearn.metrics import r2_score
+from pathlib import Path
 
 from .baseline_analysis import prepare_data_pair, prepare_future_data
 from ...analysis.historical.validation import max_annual_precipitation
@@ -19,14 +20,14 @@ COLUNAS_DADOS = [
 
 
 
-def load_and_prepare_data(name_obs, name_gcm_baseline, name_gcm_future, dir_obs, dir_gcm):
+def load_and_prepare_data(name_obs, name_gcm_baseline, name_gcm_future, dir):
     """Carrega, prepara e extrai os máximos anuais dos dados observados e do GCM."""
     print("\nPasso 1: Carregando e preparando os dados anuais...")
     
     # Caminhos para os arquivos de dados
-    path_obs = os.path.join(dir_obs, f'{name_obs}_daily.csv')
-    path_gcm_baseline = os.path.join(dir_gcm, f'{name_gcm_baseline}_daily.csv')
-    path_gcm_future = os.path.join(dir_gcm, f'{name_gcm_future}_daily.csv')
+    path_obs = f"{dir}/{name_obs}_daily.csv"
+    path_gcm_baseline = f"{dir}/{name_gcm_baseline}_daily.csv"
+    path_gcm_future = f"{dir}/{name_gcm_future}_daily.csv"
     
     print('\n[INFO] Preparando dados históricos.')
     
@@ -38,31 +39,29 @@ def load_and_prepare_data(name_obs, name_gcm_baseline, name_gcm_future, dir_obs,
     df_future = prepare_future_data(path_gcm_future=path_gcm_future, return_dataframes=True)
     
     # Calcula a precipitação máxima anual para cada conjunto de dados
-    obs_max = max_annual_precipitation(df_obs, name_file=name_obs, output_dir=dir_obs)
-    baseline_max = max_annual_precipitation(df_baseline, name_file=name_gcm_baseline, output_dir=dir_gcm)
-    future_max = max_annual_precipitation(df_future, name_file=name_gcm_future, output_dir=dir_gcm)
+    obs_max = max_annual_precipitation(df_obs, name_file=name_obs, output_dir=dir)
+    baseline_max = max_annual_precipitation(df_baseline, name_file=name_gcm_baseline, output_dir=dir)
+    future_max = max_annual_precipitation(df_future, name_file=name_gcm_future, output_dir=dir)
     
-    return obs_max, baseline_max, future_max
+    return obs_max, baseline_max, future_max, df_obs, df_baseline, df_future
 
 
 
-def fit_distributions(name_obs, name_gcm_baseline, name_gcm_future, disag_factor_str, dir_obs, dir_gcm):
+def fit_distributions(df_obs, df_baseline, df_future):
     """Ajusta as distribuições de probabilidade para todos os conjuntos de dados."""
     print("\nPasso 2: Ajustando as distribuições de probabilidade...")
 
     # Ajusta distribuições para os dados diários do GCM
-    dist_baseline = get_distribution(name_file=name_gcm_baseline, n=1, directory=dir_gcm, plot=False)
-    dist_future = get_distribution(name_file=name_gcm_future, n=1, directory=dir_gcm, plot=False)
+    dist_baseline = get_distribution(data_df=df_baseline, column_name='Precipitation', n=1, plot=False)
+    dist_future = get_distribution(data_df=df_future, column_name='Precipitation', n=1, plot=False)
 
     # Ajusta uma distribuição para cada duração sub-diária dos dados observados
     dists_hist = {}
     for duracao in COLUNAS_DADOS:
         dist_obj = get_distribution(
-            name_file=name_obs, 
-            duration=duracao, 
-            disag_factor=disag_factor_str, 
+            data_df=df_obs,
+            column_name=duracao, 
             n=1, 
-            directory=dir_obs, 
             plot=False
         )
         if dist_obj is None:
@@ -143,21 +142,39 @@ def project_future_values(data_future, temporal_coeffs, spatial_coeffs):
 
 
 
-def save_results(anos_baseline, data_baseline, dados_spatdown, anos_future, data_future, dados_finais_futuro, name_gcm_baseline, name_gcm_future, name_obs, disag_factor_str, dir_gcm):
+def save_results(
+    anos_baseline, 
+    data_baseline, 
+    dados_spatdown, 
+    anos_future, 
+    data_future, 
+    dados_finais_futuro, 
+    name_gcm_baseline, 
+    name_gcm_future, 
+    name_obs, 
+    disag_factor_str, 
+    dir_gcm
+):
     """Salva os resultados dos períodos de baseline e futuro em arquivos CSV."""
     print("\nPasso 6: Salvando resultados em arquivos CSV...")
+
+    dir_gcm = Path(dir_gcm)
 
     # --- DataFrame para o período BASELINE ---
     dict_baseline = {'Year': anos_baseline, 'baseline_daily': data_baseline, **dados_spatdown}
     df_baseline = pd.DataFrame(dict_baseline).round(2)
-    path_baseline = os.path.join(dir_gcm, f'max_subdaily_{name_gcm_baseline}_{name_obs}_{disag_factor_str}_baseline.csv')
+
+    path_baseline = dir_gcm / f"max_subdaily_{name_gcm_baseline}_{name_obs}_{disag_factor_str}_baseline.csv"
+    path_baseline.parent.mkdir(parents=True, exist_ok=True) 
     df_baseline.to_csv(path_baseline, index=False)
     print(f"  -> Salvo: {path_baseline}")
 
     # --- DataFrame para o período FUTURO ---
     dict_futuro = {'Year': anos_future, 'future_daily': data_future, **dados_finais_futuro}
     df_futuro = pd.DataFrame(dict_futuro).round(2)
-    path_futuro = os.path.join(dir_gcm, f'max_subdaily_{name_gcm_future}_{name_obs}_{disag_factor_str}_future.csv')
+
+    path_futuro = dir_gcm / f"max_subdaily_{name_gcm_future}_{name_obs}_{disag_factor_str}_future.csv"
+    path_futuro.parent.mkdir(parents=True, exist_ok=True) 
     df_futuro.to_csv(path_futuro, index=False)
     print(f"  -> Salvo: {path_futuro}")
     
@@ -208,10 +225,10 @@ def generate_eqm_figure_side_by_side(
 
 
 
-def eqm_downscaling(name_obs: str, name_gcm_baseline: str, name_gcm_future: str, 
+def eqm_downscaling(name_obs: str, name_baseline: str, name_future: str, 
                         scenario: DisaggregationScenario = DisaggregationScenario.BASE, 
-                        disag_factor: float = 0.2, dir_obs: str = 'results', 
-                        dir_gcm: str = '../datasets/GCM', verbose: bool = False, plot: bool = False):
+                        disag_factor: float = 0.2, dir: str = 'results', 
+                        verbose: bool = False, plot: bool = False):
     """
     Executa o downscaling estatístico de dados de chuva de um GCM usando o método
     de Pareamento de Quantis Equidistantes (EQM).
@@ -241,17 +258,16 @@ def eqm_downscaling(name_obs: str, name_gcm_baseline: str, name_gcm_future: str,
         disag_factor_str = 'ger'
         
     # ETAPA 1: Carregar e Preparar Dados
-    obs_max, baseline_max, future_max = load_and_prepare_data(
-        name_obs, name_gcm_baseline, name_gcm_future, dir_obs, dir_gcm
+    obs_max, baseline_max, future_max, df_obs, df_baseline, df_future = load_and_prepare_data(
+        name_obs, name_baseline, name_future, dir
     )
     
     # Gera os dados sub-diários observados (necessário para o ajuste de distribuição)
-    get_subdaily_from_disaggregation_factors(df=obs_max, scenario=scenario, var_value=disag_factor, name_file=name_obs, output_dir=dir_obs)
+    subdaily_obs = get_subdaily_from_disaggregation_factors(df=obs_max, scenario=scenario, var_value=disag_factor, name_file=name_obs, output_dir=dir)
 
     # ETAPA 2: Ajustar Distribuições de Probabilidade
     dist_baseline, dist_future, dists_hist = fit_distributions(
-        name_obs, name_gcm_baseline, 
-        name_gcm_future, disag_factor_str, dir_obs, dir_gcm
+        subdaily_obs, df_baseline, df_future
     )
     
     data_baseline = baseline_max['Precipitation'].to_numpy()
@@ -280,11 +296,11 @@ def eqm_downscaling(name_obs: str, name_gcm_baseline: str, name_gcm_future: str,
         anos_future=future_max['Year'].to_list(),
         data_future=data_future,
         dados_finais_futuro=dados_finais_futuro,
-        name_gcm_baseline=name_gcm_baseline,
-        name_gcm_future=name_gcm_future,
+        name_gcm_baseline=name_baseline,
+        name_gcm_future=name_future,
         name_obs=name_obs,
         disag_factor_str=disag_factor_str,
-        dir_gcm=dir_gcm
+        dir_gcm=dir
     )
     
     print("\nProcesso de Downscaling EQM concluído com sucesso!")

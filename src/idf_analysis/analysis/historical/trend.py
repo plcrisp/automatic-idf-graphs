@@ -71,11 +71,11 @@ def calculate_confidence_interval(data: pd.Series, slope: float, confidence_leve
 
 
 
-def analyze_single_site(df: pd.DataFrame, site_name: str, 
+def analyze_single_station(df: pd.DataFrame, station_name: str, 
                        precipitation_col: str = 'Precipitation',
                        time_col: str = 'Year',
                        alpha: float = 0.05) -> pd.DataFrame:
-    """Analisa tendências para um único site"""
+    """Analisa tendências para uma única estação"""
     df_clean = validate_dataframe(df, [precipitation_col, time_col])
     precipitation_data = df_clean[precipitation_col]
     
@@ -87,7 +87,7 @@ def analyze_single_site(df: pd.DataFrame, site_name: str,
         ci = calculate_confidence_interval(precipitation_data, test_result['slope'])
         
         results.append({
-            'site': site_name,
+            'station': station_name,
             'test_type': test_type,
             'tau': test_result['tau'],
             'p_value': test_result['p_value'],
@@ -105,25 +105,25 @@ def analyze_single_site(df: pd.DataFrame, site_name: str,
     return pd.DataFrame(results)
 
 
-def analyze_multiple_sites(data_dict: Dict[str, pd.DataFrame],
+def analyze_multiple_stations(data_dict: Dict[str, pd.DataFrame],
                           precipitation_col: str = 'Precipitation',
                           time_col: str = 'Year',
                           alpha: float = 0.05) -> pd.DataFrame:
-    """Analisa tendências para múltiplos sites"""
+    """Analisa tendências para múltiplas estações"""
     all_results = []
     
-    for site_name, df in data_dict.items():
+    for station_name, df in data_dict.items():
         try:
-            site_results = analyze_single_site(df, site_name, precipitation_col, time_col, alpha)
-            all_results.append(site_results)
+            station_results = analyze_single_station(df, station_name, precipitation_col, time_col, alpha)
+            all_results.append(station_results)
         except Exception as e:
-            warnings.warn(f"Erro ao analisar {site_name}: {str(e)}")
+            warnings.warn(f"Erro ao analisar {station_name}: {str(e)}")
             continue
     
     return pd.concat(all_results, ignore_index=True) if all_results else pd.DataFrame()
 
 
-def plot_trend_analysis(df: pd.DataFrame, site_name: str, test_type: str,
+def plot_trend_analysis(df: pd.DataFrame, station_name: str, test_type: str,
                        slope: float, intercept: float, tau: float, p_value: float,
                        significant: bool, ci_lower: float, ci_upper: float, 
                        time_col: str = 'Year', precipitation_col: str = 'Precipitation',
@@ -191,11 +191,11 @@ def plot_trend_analysis(df: pd.DataFrame, site_name: str, test_type: str,
         ax2.text(0.5, 0.5, 'Dados insuficientes para análise de resíduos',
                ha='center', va='center', transform=ax2.transAxes)
     
-    plt.suptitle(f'Análise de Tendência - {site_name} ({test_type.replace("_", " ").title()})', 
+    plt.suptitle(f'Análise de Tendência - {station_name} ({test_type.replace("_", " ").title()})', 
                 fontsize=16, fontweight='bold')
     plt.tight_layout()
     
-    filename = f"{site_name}_{test_type}_trend_analysis.png"
+    filename = f"{station_name}_{test_type}_trend_analysis.png"
     plt.savefig(Path(output_dir) / filename, dpi=300, bbox_inches='tight')
     plt.close()
     
@@ -242,14 +242,14 @@ def plot_summary_comparison(results_df: pd.DataFrame, output_dir: str = 'graphs'
         ax3.text(0.5, 0.5, 'Nenhuma tendência\nsignificativa encontrada',
                ha='center', va='center', transform=ax3.transAxes)
     
-    # Proporção de tendências por site
+    # Proporção de tendências por estação
     ax4 = axes[1, 1]
-    trend_counts = results_df.groupby(['site', 'trend']).size().unstack(fill_value=0)
+    trend_counts = results_df.groupby(['station', 'trend']).size().unstack(fill_value=0)
     if not trend_counts.empty:
         trend_counts.plot(kind='bar', stacked=True, ax=ax4, color=['red', 'gray', 'blue'])
-        ax4.set_xlabel('Site')
+        ax4.set_xlabel('station')
         ax4.set_ylabel('Número de Testes')
-        ax4.set_title('Distribuição de Tendências por Site')
+        ax4.set_title('Distribuição de Tendências por estação')
         ax4.legend(title='Tendência')
         ax4.tick_params(axis='x', rotation=45)
     
@@ -265,13 +265,13 @@ def filter_significant_results(results_df: pd.DataFrame) -> pd.DataFrame:
     return results_df[results_df['significant']].copy()
 
 
-def get_best_test_per_site(results_df: pd.DataFrame) -> pd.DataFrame:
-    """Retorna o melhor teste por site (menor p-valor entre os significativos)"""
+def get_best_test_per_station(results_df: pd.DataFrame) -> pd.DataFrame:
+    """Retorna o melhor teste por estação (menor p-valor entre os significativos)"""
     significant = filter_significant_results(results_df)
     if significant.empty:
         return pd.DataFrame()
     
-    return significant.loc[significant.groupby('site')['p_value'].idxmin()].copy()
+    return significant.loc[significant.groupby('station')['p_value'].idxmin()].copy()
 
 
 def generate_trend_plots(data_dict: Dict[str, pd.DataFrame], 
@@ -284,10 +284,10 @@ def generate_trend_plots(data_dict: Dict[str, pd.DataFrame],
     target_results = results_df if plot_all else filter_significant_results(results_df)
     
     for _, row in target_results.iterrows():
-        site_name = row['site']
-        if site_name in data_dict:
+        station_name = row['station']
+        if station_name in data_dict:
             plot_trend_analysis(
-                data_dict[site_name], site_name, row['test_type'],
+                data_dict[station_name], station_name, row['test_type'],
                 row['slope'], row['intercept'], row['tau'], row['p_value'],
                 row['significant'], row['ci_lower'], row['ci_upper'], 
                 time_col, precipitation_col, output_dir
@@ -303,7 +303,7 @@ def create_summary_stats(results_df: pd.DataFrame) -> Dict:
     
     stats = {
         'total_tests': len(results_df),
-        'total_sites': results_df['site'].nunique(),
+        'total_stations': results_df['station'].nunique(),
         'significant_tests': len(significant_results),
         'significance_rate': len(significant_results) / len(results_df) * 100,
         'test_types': results_df['test_type'].unique().tolist()
@@ -335,7 +335,7 @@ def run_trend_analysis(data_dict: Dict[str, pd.DataFrame],
     Parameters:
     -----------
     data_dict : Dict[str, pd.DataFrame]
-        Dicionário com nome do site como chave e DataFrame como valor
+        Dicionário com nome da estação como chave e DataFrame como valor
     precipitation_col : str
         Nome da coluna de precipitação
     time_col : str
@@ -352,7 +352,7 @@ def run_trend_analysis(data_dict: Dict[str, pd.DataFrame],
     Tuple[pd.DataFrame, Dict]
         DataFrame com resultados e dicionário com estatísticas resumo
     """
-    results_df = analyze_multiple_sites(data_dict, precipitation_col, time_col, alpha)
+    results_df = analyze_multiple_stations(data_dict, precipitation_col, time_col, alpha)
     stats = create_summary_stats(results_df)
     
     if generate_plots and not results_df.empty:

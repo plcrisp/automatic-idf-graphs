@@ -111,7 +111,7 @@ def get_adjusted_distributions(path_observed: str, path_gcm: str):
 
 
 
-def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str,  dir_obs: str = 'results', dir_gcm: str = '../datasets/GCM', plot=True, save_csv_path: str = None):
+def quantile_mapping(name_obs: str, name_baseline: str, name_future: str,  dir: str = 'results', plot=True, save_csv_path: str = None):
     """
     Executa a correção de viés de modelos climáticos via Quantile Mapping com ajuste espacial e regressão log-linear.
 
@@ -124,10 +124,9 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
 
     Parâmetros:
         name_obs (str): Nome base do arquivo CSV com os dados observados (sem sufixo '_daily.csv').
-        name_gcm_baseline (str): Nome base do arquivo CSV com os dados GCM históricos.
-        name_gcm_future (str): Nome base do arquivo CSV com os dados GCM projetados para o futuro.
-        dir_obs (str): Diretório onde está localizado o arquivo observado. Padrão: 'results'.
-        dir_gcm (str): Diretório onde estão os arquivos GCM. Padrão: 'GCM_data/bias_correction'.
+        name_baseline (str): Nome base do arquivo CSV com os dados GCM históricos.
+        name_future (str): Nome base do arquivo CSV com os dados GCM projetados para o futuro.
+        dir (str): Diretório onde está localizado o arquivo observado. Padrão: 'results'.
         plot (bool): Se True, plota a regressão log-linear. Padrão: True.
         save_csv_path (str | None): Caminho para salvar o CSV com os dados corrigidos. Se None, não salva. Padrão: None.
 
@@ -139,9 +138,9 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
             - 'Precipitation': Precipitação futura corrigida (bias-corrected).
     """
     
-    path_observed = f'{dir_obs}/{name_obs}_daily.csv'
-    path_gcm_baseline = f'{dir_gcm}/{name_gcm_baseline}_daily.csv'
-    path_gcm_future = f'{dir_gcm}/{name_gcm_future}_daily.csv'
+    path_observed = f'{dir}/{name_obs}_daily.csv'
+    path_gcm_baseline = f'{dir}/{name_baseline}_daily.csv'
+    path_gcm_future = f'{dir}/{name_future}_daily.csv'
     
     
     # Etapa 1: Ajuste das distribuições
@@ -170,14 +169,39 @@ def quantile_mapping(name_obs: str, name_gcm_baseline: str, name_gcm_future: str
 
     # Plot opcional
     if plot:
-        plt.figure(figsize=(8, 5))
-        plt.scatter(x, y, alpha=0.5, label='GCM baseline vs. SpatDown')
-        plt.plot(x, model(x), color='red', label=f'Regressão: y = {a:.2f}x + {b:.2f}\n$R^2$ = {r2:.3f}')
-        plt.xlabel('log(Precipitação GCM baseline)')
-        plt.ylabel('Precipitação corrigida (5min)')
-        plt.title('Regressão para Correção Espacial')
-        plt.legend()
-        plt.grid(True)
+        plt.figure(figsize=(10, 6))
+        
+        max_val = max(np.max(data_obs), np.max(data_gcm_future), np.max(data_corrected))
+        bins = np.linspace(0, min(max_val, np.percentile(np.concatenate([data_obs, data_gcm_future, data_corrected]), 99)), 50)
+        
+        plt.hist(data_obs, bins=bins, alpha=0.7, label='Observado (referência)', 
+                color='green', density=True, edgecolor='darkgreen', linewidth=0.5)
+        
+        plt.hist(data_gcm_future, bins=bins, alpha=0.6, label='GCM Original (com viés)', 
+                color='red', density=True, edgecolor='darkred', linewidth=0.5)
+        
+        plt.hist(data_corrected, bins=bins, alpha=0.8, label='GCM Corrigido', 
+                color='blue', density=True, edgecolor='darkblue', linewidth=0.5)
+        
+        stats_text = f"""Estatísticas:
+                            Observado:     μ={np.mean(data_obs):.2f}, σ={np.std(data_obs):.2f}
+                            GCM Original:  μ={np.mean(data_gcm_future):.2f}, σ={np.std(data_gcm_future):.2f}
+                            GCM Corrigido: μ={np.mean(data_corrected):.2f}, σ={np.std(data_corrected):.2f}
+                            Redução do viés na média: {abs(np.mean(data_gcm_future) - np.mean(data_obs)) - abs(np.mean(data_corrected) - np.mean(data_obs)):.2f}"""
+        
+        plt.text(0.98, 0.98, stats_text, transform=plt.gca().transAxes, 
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                fontsize=9, family='monospace')
+        
+        plt.xlabel('Precipitação (mm)', fontsize=12)
+        plt.ylabel('Densidade de Probabilidade', fontsize=12)
+        plt.title('Correção de Viés por Quantile Mapping\n' + 
+                 'Verde=Meta | Vermelho=Problema | Azul=Solução', fontsize=14)
+        plt.legend(loc='upper right', bbox_to_anchor=(0.97, 0.65))
+        plt.grid(True, alpha=0.3)
+        
+        # Melhorar aparência
         plt.tight_layout()
         plt.show()
 

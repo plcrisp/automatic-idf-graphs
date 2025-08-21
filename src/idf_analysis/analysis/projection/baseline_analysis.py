@@ -42,7 +42,6 @@ Exemplo de nome de arquivo: `HADGEM_baseline_QM_daily.csv`
 
 from ..historical.validation import p90,max_annual_precipitation
 from ...data.processing import read_csv, aggregate_to_csv, verification, fill_missing_data
-from ..historical.trend import get_trend
 
 import pandas as pd
 import datetime
@@ -132,13 +131,6 @@ def analyze_baseline_bias_corrected_gcms(
 
             sites_list.append(name)
 
-    print('\n--> Trend analysis')
-    print('- Annual precipitation')
-    get_trend(var='Year', sites_list=sites_list, group=group_name, alpha=alpha,data_type='mod')
-
-    print('\n- Max_daily')
-    get_trend(var='Max_daily', sites_list=sites_list, group=group_name, alpha=alpha, data_type='mod')
-
     print('\nDone!')
     
 
@@ -180,8 +172,8 @@ def prepare_data_pair(
     verification(df_obs)
     verification(df_gcm)
 
-    df_obs = fill_missing_data(path_main=path_observed)
-    df_gcm = fill_missing_data(path_main=path_gcm)
+    df_obs = fill_missing_data(df_main=df_obs)
+    df_gcm = fill_missing_data(df_main=df_gcm)
 
     # --- Conversão, limpeza e criação da coluna de data ---
     for df in [df_obs, df_gcm]:
@@ -257,23 +249,10 @@ def load_and_clean_precipitation_data(file_path: str):
 def prepare_future_data(path_gcm_future: str, return_dataframes: bool = False):
     df_future = read_csv(path_gcm_future)
     
-    df_future = load_and_clean_precipitation_data(path_gcm_future)
-    
-    # Corrigir separadores incorretos (ponto para milhar, vírgula para decimal)
-    df_future['Precipitation'] = (
-        df_future['Precipitation']
-        .astype(str)
-        .str.replace('.', '', regex=False)  # remove milhar
-        .str.replace(',', '.', regex=False)  # converte decimal
-    )
-
-    # Converte para número
-    df_future['Precipitation'] = pd.to_numeric(df_future['Precipitation'], errors='coerce')
-    
     verification(df_future)
     
     # Gap filling
-    df_future = fill_missing_data(path_main=path_gcm_future)
+    df_future = fill_missing_data(df_main=df_future)
     
     # Remove valores inválidos
     df_future.dropna(subset=['Precipitation'], inplace=True)

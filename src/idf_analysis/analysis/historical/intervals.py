@@ -22,6 +22,7 @@ import pandas as pd
 from enum import Enum
 from importlib import resources
 from typing import Literal
+from pathlib import Path
 
 
 
@@ -185,7 +186,8 @@ def get_subdaily_from_disaggregation_factors(
         else:
             print(f"[WARNING] Intervalo {interval} não encontrado em fatores de desagregação.")
 
-    output_path = f'{output_dir}/max_subdaily_{name_file}_{type_tag}.csv'
+    output_path = Path(output_dir) / f"max_daily_{name_file}.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     df_subdaily.to_csv(output_path, index=False)
     print(f'[OK] Resultado salvo em: {output_path}')
     return df_subdaily

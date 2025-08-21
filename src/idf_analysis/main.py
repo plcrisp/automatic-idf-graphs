@@ -10,13 +10,32 @@ from idf_analysis.analysis.historical.subdaily import get_max_subdaily_table
 from idf_analysis.data.processing import read_csv, verification, fill_missing_data
 from idf_analysis.analysis.historical.validation import max_annual_precipitation
 from .data.api.climbra import get_climbra_data
+from .analysis.projection.dbc import dbc_percentilico
 
 
 
 
 from typing import Optional, List
-inmet_santana = process_data(source=DataSource.INMET, data_path='./datasets/INMET_DAILY_SAO_PAULO_MIRANTE/inmet_daily_sao_paulo_mirante.csv')
-aggregate_to_csv(df=inmet_santana, name='inmet_daily_sao_paulo_mirante', directory='results/inmet_daily_sao_paulo_mirante')
+#inmet_santana = process_data(source=DataSource.INMET, data_path='./datasets/INMET_DAILY_SAO_PAULO_MIRANTE/inmet_daily_sao_paulo_mirante.csv')
+#aggregate_to_csv(df=inmet_santana, name='inmet_daily_sao_paulo_mirante', directory='results/inmet_daily_sao_paulo_mirante')
+#fig, axes = eqm_downscaling(
+  #  name_obs='inmet_daily_sao_paulo_mirante/inmet_daily_sao_paulo_mirante',
+  #  name_baseline='CABra467/historical/1980-2013',
+  #  name_future='CABra467/ssp245/2015-2100',
+  #  dir='results',
+  #  plot=True,
+#)
+
+fig, axes = eqm_downscaling(
+    name_obs='inmet_daily_sao_paulo_mirante/inmet_daily_sao_paulo_mirante', 
+    name_baseline='CABra467/historical/1980-2013', 
+    name_future='CABra467/ssp245/2015-2100', 
+    dir='results', 
+    plot=True
+    )
+
+fig.show()
+
 
 '''
 cemaden_santana = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='AC Santana', show_station_counts=True, generate_map=True)

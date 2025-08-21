@@ -1,8 +1,10 @@
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
-from typing import Literal, List, Tuple, Optional, Dict
 import pandas as pd
+
+from typing import Literal, List, Tuple, Optional, Dict
+from pathlib import Path
 
 from ...data.processing import verification, fill_missing_data, read_csv, remove_outliers_from_max
 from ...core.correlation import left_join_precipitation
@@ -59,49 +61,49 @@ def p90(df, ax=None, display=True, show_p90=True):
 
 
 
-def max_annual_precipitation(df, name_file, output_dir='Results', frequency: Literal['daily', 'hourly'] = 'daily', outliers: bool = False):
+def max_annual_precipitation(
+    df, 
+    name_file, 
+    output_dir="Results", 
+    frequency: Literal["daily", "hourly"] = "daily", 
+    outliers: bool = False
+):
     """
     Calcula o valor máximo de precipitação anual e remove outliers.
     Para dados horários, soma a precipitação por dia antes de calcular os máximos.
-
-    Parâmetros:
-    - df (DataFrame): Deve conter colunas 'Year', 'Precipitation', e dependendo da frequência: 'Month', 'Day', 'Hour'.
-    - name_file (str): Nome base do arquivo de saída (sem extensão).
-    - output_dir (str): Diretório onde o CSV será salvo.
-    - frequency (str): 'daily' (espera valores diários) ou 'hourly' (soma por dia antes de agrupar por ano).
-    - outliers (bool): Se True, remove outliers usando a função auxiliar.
-
-    Retorna:
-    - DataFrame com os valores máximos de precipitação anual, excluindo outliers.
     """
 
     df = df.dropna()
 
-    if frequency == 'hourly':
-        required_cols = {'Year', 'Month', 'Day', 'Precipitation'}
+    if frequency == "hourly":
+        required_cols = {"Year", "Month", "Day", "Precipitation"}
         if not required_cols.issubset(df.columns):
             print(f"[ERRO] Colunas necessárias ausentes para frequência 'hourly': {required_cols}")
             return
 
         # Agrupar por data (Year, Month, Day) e somar a precipitação diária
-        df_daily = df.groupby(['Year', 'Month', 'Day'], as_index=False)['Precipitation'].sum()
-    elif frequency == 'daily':
+        df_daily = df.groupby(["Year", "Month", "Day"], as_index=False)["Precipitation"].sum()
+
+    elif frequency == "daily":
         df_daily = df.copy()
-        if 'Month' not in df_daily.columns or 'Day' not in df_daily.columns:
+        if "Month" not in df_daily.columns or "Day" not in df_daily.columns:
             print("[WARNING] Colunas 'Month' e 'Day' ausentes nos dados diários. OK se não for necessário.")
+
     else:
         print("[ERRO] Frequência inválida. Use 'daily' ou 'hourly'.")
         return
 
     # Agrupar por ano e pegar o valor máximo
-    df_max = df_daily.groupby('Year')['Precipitation'].max().reset_index()
-    
-    # Remover outliers usando a função auxiliar caso especificado
-    if not outliers:
-        df_clean = remove_outliers_from_max(df_max)
+    df_max = df_daily.groupby("Year")["Precipitation"].max().reset_index()
 
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, f'max_daily_{name_file}.csv')
+    # Remover outliers caso especificado
+    df_clean = remove_outliers_from_max(df_max) if outliers else df_max
+
+    # Criar diretório de saída
+    output_path = Path(output_dir) / f"max_daily_{name_file}.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Salvar CSV
     df_clean.to_csv(output_path, index=False)
 
     return df_clean
