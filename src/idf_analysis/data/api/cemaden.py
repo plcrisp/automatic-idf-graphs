@@ -8,9 +8,10 @@ import unicodedata
 import pandas as pd
 
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import datetime
 from ..processing import aggregate_to_csv
 from ..reader import process_data, DataSource
+from typing import Literal, Optional
 
 UFS_BRASIL = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
@@ -148,7 +149,15 @@ def schedule_data_request(api_url: str, token: str, params: dict) -> int | None:
         print(f"❌ Falha na comunicação ao agendar requisição: {err}")
         raise
 
-def check_scheduling_status(api_url: str, token: str, job_id: int, station_name: dict, selected_city: str, max_attempts: int = 20, delay_seconds: int = 15) -> dict | None:
+def check_scheduling_status(
+    api_url: str, 
+    token: str, 
+    job_id: int, 
+    station_name: dict, 
+    selected_city: str, 
+    max_attempts: int = 20, 
+    delay_seconds: int = 15
+) -> dict | None:
     """
     Verifica o status de um agendamento (polling) até que esteja concluído ou falhe.
     Args:
@@ -206,13 +215,13 @@ def check_scheduling_status(api_url: str, token: str, job_id: int, station_name:
 
     return None
 
-def convert_date_br_to_api(data_str_br: str, hourType: str) -> str | None:
+def convert_date_br_to_api(data_str_br: str, hourType: Literal["inicio", "fim"]) -> str | None:
     """
     Converte uma data do formato brasileiro (DD/MM/AAAA) para o formato da API (aaaaMMddHHmm).
 
     Args:
         data_str_br (str): A data no formato "DD/MM/AAAA".
-        hourType (str): 'inicio' para adicionar o horário "0000" ou 'fim' para "2359".
+        hourType (Literal["inicio", "fim"]): 'inicio' para adicionar o horário "0000" ou 'fim' para "2359".
 
     Returns:
         str | None: A data convertida ou None se o formato for inválido.
@@ -232,7 +241,7 @@ def convert_date_br_to_api(data_str_br: str, hourType: str) -> str | None:
     except ValueError:
         # Retorna None se a data digitada não corresponder ao formato "DD/MM/AAAA"
         return None
-    
+
 def normalize_name(name: str) -> str:
     """
     Remove acentos, converte para maiúsculas e substitui espaços por underscores.
@@ -336,7 +345,8 @@ def download_and_extract_csv(download_link: str, station_name: str, city: str) -
         print("❌ O arquivo baixado não é um .zip válido.")
     except Exception as e:
         print(f"❌ Ocorreu um erro inesperado durante a extração: {e}")
-        
+    return "", ""
+
 def clean_and_transform_csv(csv_original_content: bytes) -> str:
     """
     Lê o conteúdo de um CSV, limpa, transforma e o retorna como uma string no formato final.
@@ -389,14 +399,20 @@ def clean_and_transform_csv(csv_original_content: bytes) -> str:
     print("✨ Transformação concluída!")
     return csv_final_string
 
-def finalize_request_by_id(job_id: int, final_station: dict, selected_city: str, token: str | None = None, process: bool = True) -> pd.DataFrame | None:
+def finalize_request_by_id(
+    job_id: int, 
+    final_station: dict, 
+    selected_city: str, 
+    token: Optional[str] = None, 
+    process: bool = True
+) -> pd.DataFrame | None:
     """
     Verifica o status de um agendamento existente e, se concluído,
     baixa, processa e salva os dados.
     
     Args:
         job_id (int): O ID do agendamento a ser verificado.
-        token (str): O token de autenticação.
+        token (Optional[str]): O token de autenticação.
         final_station (dict): O dicionário com os dados da estação selecionada.
         selected_city (str): O nome da cidade selecionada.
         process (bool): Flag para determinar se o pós-processamento deve ocorrer.
@@ -470,6 +486,7 @@ def finalize_request_by_id(job_id: int, final_station: dict, selected_city: str,
     except (KeyboardInterrupt, SystemExit) as e:
         if str(e): print(f"\n👋 {e}")
         else: print("\n👋 Operação interrompida pelo usuário.")
+    return None
 
 def get_cemaden_data():
     """

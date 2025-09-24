@@ -1,7 +1,7 @@
 from enum import Enum
 from pathlib import Path
 from collections import Counter
-from typing import Union
+from typing import Optional
 
 import folium
 import os
@@ -17,7 +17,7 @@ class DataSource(Enum):
 
 def _to_number(
     s: pd.Series, 
-    fill_value: Union[int, float] = 0.0, 
+    fill_value: int | float = 0.0, 
     as_integer: bool = False
 ) -> pd.Series:
     """
@@ -28,9 +28,9 @@ def _to_number(
     ----------
     s : pd.Series
         A série de entrada para conversão.
-    fill_value : Union[int, float], opcional
+        fill_value : int | float, opcional
         Valor para preencher os dados ausentes ou inválidos (padrão é 0.0).
-    as_integer : bool, opcional
+        as_integer : bool, opcional
         Se True, converte o resultado final para inteiro. 
         Se False (padrão), retorna como float.
 
@@ -120,7 +120,7 @@ def generate_cemaden_map(data_path, cemaden_df):
 
 
       
-def process_data(source: DataSource, data_path: str, site_filter: str = None, show_station_counts: bool = False, generate_map: bool = False):
+def process_data(source: DataSource, data_path: str, site_filter: Optional[str] = None, show_station_counts: bool = False, generate_map: bool = False):
     """
     Processa dados meteorológicos de diferentes fontes.
     """
@@ -138,7 +138,7 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None, sh
         )
 
         CEMADEN_df = CEMADEN_df[['nomeEstacao', 'datahora', 'valorMedida']]
-        CEMADEN_df.columns = ['Site', 'Date', 'Precipitation']
+        CEMADEN_df.columns = pd.Index(['Site', 'Date', 'Precipitation'])
 
         CEMADEN_df['Precipitation'] = _to_number(CEMADEN_df['Precipitation'])
         
@@ -183,7 +183,7 @@ def process_data(source: DataSource, data_path: str, site_filter: str = None, sh
             skipinitialspace=True, encoding='latin1'
         )
 
-        df.columns = ['Date', 'Hour', 'Precipitation'] if is_hourly else ['Date', 'Precipitation']
+        df.columns = pd.Index(['Date', 'Hour', 'Precipitation']) if is_hourly else pd.Index(['Date', 'Precipitation'])
 
         df['Date'] = pd.to_datetime(df['Date'], format="%d/%m/%Y", errors='coerce')
         df['Year'] = df['Date'].dt.year

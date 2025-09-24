@@ -22,34 +22,27 @@ from pathlib import Path
 from datetime import date, datetime
 from sklearn.ensemble import RandomForestRegressor
 
-
-
 # Função para agregação flexível
-def aggregate(df, vars):
+def aggregate(df: pd.DataFrame, vars: list) -> pd.DataFrame:
     """
     Agrega os dados de precipitação com base nas colunas fornecidas.
-    
-    Parâmetros:
-    df (DataFrame): O DataFrame com os dados.
-    vars (list): Lista de variáveis para agrupar (ex: ['Year'], ['Year', 'Month']).
-    
-    Retorna:
-    DataFrame: DataFrame com os dados agregados.
+    Args:
+        df (DataFrame): O DataFrame com os dados.
+        vars (list): Lista de variáveis para agrupar (ex: ['Year'], ['Year', 'Month']).
+    Returns:
+        DataFrame: DataFrame com os dados agregados.
     """
     return df.groupby(vars).Precipitation.sum().reset_index()
 
-
-
 # Função para salvar os arquivos CSV
-def save_to_csv(df, name, var, directory):
+def save_to_csv(df: pd.DataFrame, name: str, var: str, directory: str):
     """
     Salva um DataFrame em formato CSV no diretório especificado.
-    
-    Parâmetros:
-    df (DataFrame): O DataFrame a ser salvo.
-    name (str): Nome base do arquivo.
-    var (str): Nome da variável de agregação (ex: 'yearly', 'monthly').
-    directory (str): Caminho do diretório onde salvar.
+    Args:
+        df (DataFrame): O DataFrame a ser salvo.
+        name (str): Nome base do arquivo.
+        var (str): Nome da variável de agregação (ex: 'yearly', 'monthly').
+        directory (str): Caminho do diretório onde salvar.
     """
     # Garante que o diretório existe
     os.makedirs(directory, exist_ok=True)
@@ -58,21 +51,17 @@ def save_to_csv(df, name, var, directory):
     file_path = os.path.join(directory, f'{name}_{var}.csv')
     df.to_csv(file_path, index=False)
 
-
-
-def aggregate_to_csv(df, name, directory='Results', include_minutes=False, minute_freq=15):
+def aggregate_to_csv(df: pd.DataFrame, name: str, directory: str='Results', include_minutes: bool=False, minute_freq: int=15):
     """
     Agrega os dados e salva em arquivos CSV anuais, mensais, diários e por hora.
     Opcionalmente, distribui proporcionalmente para intervalos de minutos.
-    
-    Parâmetros:
-    df (DataFrame): O DataFrame com os dados.
-    name (str): Nome base para os arquivos.
-    directory (str): Caminho do diretório onde salvar os resultados.
-    include_minutes (bool): Se True, cria também arquivo com distribuição por minutos.
-    minute_freq (int): Frequência em minutos para distribuição (padrão: 15).
+    Args:
+        df (DataFrame): O DataFrame com os dados.
+        name (str): Nome base para os arquivos.
+        directory (str): Caminho do diretório onde salvar os resultados.
+        include_minutes (bool): Se True, cria também arquivo com distribuição por minutos.
+        minute_freq (int): Frequência em minutos para distribuição (padrão: 15).
     """
-    
     # Garante que o diretório existe
     Path(directory).mkdir(parents=True, exist_ok=True)
     
@@ -98,20 +87,15 @@ def aggregate_to_csv(df, name, directory='Results', include_minutes=False, minut
             df_minutes = distribute_to_minutes(df_hourly, minute_freq)
             save_to_csv(df_minutes, name, f'{minute_freq}min', directory)
 
-
-
-def distribute_to_minutes(df_hourly, minute_freq):
+def distribute_to_minutes(df_hourly: pd.DataFrame, minute_freq: int) -> pd.DataFrame:
     """
     Distribui dados horários proporcionalmente para intervalos de minutos.
-    
-    Parâmetros:
-    df_hourly (DataFrame): DataFrame com dados agregados por hora.
-    minute_freq (int): Frequência em minutos para distribuição.
-    
-    Retorna:
-    DataFrame: Dados distribuídos por intervalos de minutos.
+    Args:
+        df_hourly (DataFrame): DataFrame com dados agregados por hora.
+        minute_freq (int): Frequência em minutos para distribuição.
+    Returns:
+        DataFrame: Dados distribuídos por intervalos de minutos.
     """
-    
     intervals_per_hour = 60 // minute_freq
     
     distributed_data = []
@@ -142,25 +126,17 @@ def distribute_to_minutes(df_hourly, minute_freq):
     
     return df_minutes
 
-
-
 # Função para ler CSV
-def read_csv(path):
+def read_csv(path: str) -> pd.DataFrame:
     """
     Lê um arquivo CSV gerado pela agregação.
-    
-    Parâmetros:
-    name (str): Nome base do arquivo.
-    var (str): Variável de agregação (ex: 'yearly', 'monthly', 'daily', 'hourly', 'min').
-    directory (str): Diretório onde os arquivos estão salvos.
-    
-    Retorna:
-    DataFrame: O DataFrame lido do arquivo CSV.
+    Args:
+        path (str): Caminho do arquivo CSV.
+    Returns:
+        DataFrame: O DataFrame lido do arquivo CSV.
     """
     file_path = os.path.join(path)
     return pd.read_csv(file_path)
-
-
 
 def verification(df: pd.DataFrame, frequency: Literal["yearly", "monthly", "daily", "hourly"] = "daily"):
     """
@@ -239,23 +215,15 @@ def verification(df: pd.DataFrame, frequency: Literal["yearly", "monthly", "dail
         result["status"] = "invalid_dataset"
 
     return result
-        
-        
-        
-def set_date(df):
+            
+def set_date(df: pd.DataFrame) -> pd.DataFrame:
     """
     Cria uma coluna 'Date' a partir de 'Year', 'Month', 'Day' (e opcionalmente 'Hour'),
     define-a como índice, e preenche intervalos de tempo ausentes com base na resolução.
-
-    Parâmetros:
-    ----------
-    df : pandas.DataFrame
-        DataFrame contendo as colunas 'Year', 'Month', 'Day' e opcionalmente 'Hour'.
-
-    Retorna:
-    -------
-    df : pandas.DataFrame
-        DataFrame atualizado com índice datetime e colunas reconstruídas.
+    Args:
+        df (DataFrame): DataFrame contendo as colunas 'Year', 'Month', 'Day' e opcionalmente 'Hour'.
+    Returns:
+        df (DataFrame): DataFrame atualizado com índice datetime e colunas reconstruídas.
     """
     has_hour = 'Hour' in df.columns
 
@@ -283,6 +251,11 @@ def set_date(df):
     # Reindexa e reconstrói as colunas
     df = df.reindex(full_idx)
     df['Date'] = df.index
+
+    # Garante que o índice é DatetimeIndex
+    if not isinstance(df.index, pd.DatetimeIndex):
+        df.index = pd.to_datetime(df.index)
+
     df['Year'] = df.index.year
     df['Month'] = df.index.month
     df['Day'] = df.index.day
@@ -291,17 +264,13 @@ def set_date(df):
 
     return df
 
-
-
-def interpolate_by_frequency(df, frequency: Literal["yearly", "monthly", "daily", "hourly"] = "daily"):
+def interpolate_by_frequency(df: pd.DataFrame, frequency: Literal["yearly", "monthly", "daily", "hourly"] = "daily") -> pd.Series:
     """
     Aplica interpolação em uma série de acordo com a frequência desejada.
-    
-    Parâmetros:
+    Args:
         df (DataFrame): DataFrame com colunas 'Precipitation', 'Year', 'Month', 'Day', e opcionalmente 'Hour'.
-        frequency (str): 'yearly', 'monthly', 'daily' ou 'hourly'.
-    
-    Retorna:
+        frequency (Literal["yearly", "monthly", "daily", "hourly"]): 'yearly', 'monthly', 'daily' ou 'hourly'.
+    Returns:
         Series: Série interpolada.
     """
     if frequency == 'yearly':
@@ -321,8 +290,6 @@ def interpolate_by_frequency(df, frequency: Literal["yearly", "monthly", "daily"
     else:
         raise ValueError("Frequência inválida. Use 'yearly', 'monthly', 'daily' ou 'hourly'.")
 
-
-
 def fill_missing_data(
     df_main: pd.DataFrame,
     df_secondary: Optional[pd.DataFrame] = None,
@@ -332,20 +299,12 @@ def fill_missing_data(
     Preenche os valores faltantes na coluna 'Precipitation' de um DataFrame.
 
     Usa interpolação por frequência ou Random Forest com base em um segundo DataFrame.
-
-    Parâmetros
-    ----------
-    df_main : pd.DataFrame
-        DataFrame principal com valores faltantes.
-    df_secondary : pd.DataFrame, opcional
-        DataFrame secundário com dados mais completos.
-    frequency : str
-        Uma entre: 'yearly', 'monthly', 'daily', 'hourly'.
-
-    Retorna
-    -------
-    df_main : pd.DataFrame
-        DataFrame com a coluna 'Precipitation' preenchida.
+    Args:
+        df_main (pd.DataFrame): DataFrame principal com valores faltantes.
+        df_secondary (Optional[pd.DataFrame]): DataFrame secundário com dados mais completos.
+        frequency (Literal["yearly", "monthly", "daily", "hourly"]): Frequência da interpolação.
+    Returns:
+        pd.DataFrame: DataFrame com a coluna 'Precipitation' preenchida.
     """
     df_main = set_date(df_main)
 
@@ -422,16 +381,13 @@ def fill_missing_data(
 
     return df_main
 
-
-
-def remove_outliers_from_max(df, column='Precipitation', duration=0):
+def remove_outliers_from_max(df: pd.DataFrame, column: str = 'Precipitation', duration: int = 0) -> pd.DataFrame:
     """
-    Remove outliers da coluna 'Precipitation' de um DataFrame, sem agrupar os dados.
-
+    Remove outliers da coluna selecionada de um DataFrame, sem agrupar os dados.
     Args:
-        df (pd.DataFrame): DataFrame com coluna 'Precipitation'.
-        duration (int, optional): Duração usada para renomear a coluna (padrão: 0, sem renomeação).
-
+        df (pd.DataFrame): DataFrame com os dados.
+        column (str): Nome da coluna para análise de outliers (padrão: 'Precipitation').
+        duration (int): Duração usada para renomear a coluna (padrão: 0, sem renomeação).
     Returns:
         pd.DataFrame: DataFrame filtrado sem outliers na coluna 'Precipitation'.
     """
@@ -451,6 +407,6 @@ def remove_outliers_from_max(df, column='Precipitation', duration=0):
     
     # Caso uma duração seja passada, renomeia a coluna
     if duration != 0:
-        df_filtered.columns = ['Max_{dur}'.format(dur=duration)]
+        df_filtered = df_filtered.rename(columns={column: f'Max_{duration}'})
     
     return df_filtered

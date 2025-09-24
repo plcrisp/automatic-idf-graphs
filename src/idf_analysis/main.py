@@ -1,3 +1,4 @@
+import os
 # Importações dos módulos utilitários
 from .data.api.inmet import get_inmet_data, load_inmet_station_parameters
 from .data.api.cemaden import get_cemaden_data, finalize_request_by_id
@@ -31,7 +32,6 @@ aggregate_to_csv(
 )
 
 # -> INMET - Mirante de Santana - SP - Diário
-import os
 nome_estacao = "DAILY_SAO_PAULO_MIRANTE"
 nome_limpo = "daily_sao_paulo_mirante"
 pasta = f"./datasets/INMET_{nome_estacao}"
@@ -48,7 +48,6 @@ aggregate_to_csv(
 )
 
 # -> INMET - Mirante de Santana - SP
-import os
 nome_estacao = "SAO_PAULO_MIRANTE"
 nome_limpo = "sao_paulo_mirante"
 pasta = f"./datasets/INMET_{nome_estacao}"
@@ -64,25 +63,6 @@ aggregate_to_csv(
     directory='./results/inmet_' + nome_limpo
 )
 '''
-
-import pandas as pd
-
-from idf_analysis.data.processing import read_csv, verification, fill_missing_data
-from idf_analysis.helpers.notebook import precip_summary
-from IPython.display import display
-
-# Lendo os DataFrames obtidos
-cemaden_df = read_csv(path='./results/cemaden_ac_santana_sao/cemaden_ac_santana_sao_hourly.csv')
-inmet_df = read_csv(path='./results/inmet_sao_paulo_mirante/inmet_sao_paulo_mirante_hourly.csv')
-inmet_daily_df = read_csv(path='./results/inmet_daily_sao_paulo_mirante/inmet_daily_sao_paulo_mirante_daily.csv')
-
-summary_hourly = pd.concat([
-    precip_summary(inmet_df, "INMET Horário"),
-    precip_summary(cemaden_df, "CEMADEN"),
-    
-])
-print("📊 Base de dados para IDF's históricas: ")
-display(summary_hourly.style.format(precision=2))
 
 '''
 from typing import Optional, List
