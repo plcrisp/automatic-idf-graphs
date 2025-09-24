@@ -1,6 +1,6 @@
 # Importações dos módulos utilitários
 from .data.api.inmet import get_inmet_data, load_inmet_station_parameters
-from .data.api.cemaden import get_cemaden_data, finalizar_requisicao_por_id
+from .data.api.cemaden import get_cemaden_data, finalize_request_by_id
 from .data.processing import aggregate_to_csv
 from .data.reader import process_data, DataSource
 from .analysis.projection.eqm import eqm_downscaling
@@ -12,9 +12,79 @@ from idf_analysis.analysis.historical.validation import max_annual_precipitation
 from .data.api.climbra import get_climbra_data
 from .analysis.projection.dbc import dbc_percentilico
 
+'''
+# Processamento de dados já baixados
+# -> CEMADEN - AC Santana do Parnaíba - SP
+caminho_final = "./datasets/CEMADEN_AC_SANTANA_SAO"
+nome_limpo = "cemaden_ac_santana_sao"
 
+df = process_data(
+    source=DataSource.CEMADEN,
+    data_path=caminho_final,
+    site_filter="API"
+)
 
+aggregate_to_csv(
+    df=df,
+    name='cemaden_' + nome_limpo,
+    directory='./results/' + nome_limpo
+)
 
+# -> INMET - Mirante de Santana - SP - Diário
+import os
+nome_estacao = "DAILY_SAO_PAULO_MIRANTE"
+nome_limpo = "daily_sao_paulo_mirante"
+pasta = f"./datasets/INMET_{nome_estacao}"
+caminho_csv = os.path.join(pasta, f"inmet_{nome_limpo}.csv")
+df = process_data(
+    source=DataSource.INMET,
+    data_path=caminho_csv,
+)
+
+aggregate_to_csv(
+    df=df,
+    name= 'inmet_' + nome_limpo,
+    directory='./results/inmet_' + nome_limpo
+)
+
+# -> INMET - Mirante de Santana - SP
+import os
+nome_estacao = "SAO_PAULO_MIRANTE"
+nome_limpo = "sao_paulo_mirante"
+pasta = f"./datasets/INMET_{nome_estacao}"
+caminho_csv = os.path.join(pasta, f"inmet_{nome_limpo}.csv")
+df = process_data(
+    source=DataSource.INMET,
+    data_path=caminho_csv,
+)
+
+aggregate_to_csv(
+    df=df,
+    name= 'inmet_' + nome_limpo,
+    directory='./results/inmet_' + nome_limpo
+)
+'''
+
+import pandas as pd
+
+from idf_analysis.data.processing import read_csv, verification, fill_missing_data
+from idf_analysis.helpers.notebook import precip_summary
+from IPython.display import display
+
+# Lendo os DataFrames obtidos
+cemaden_df = read_csv(path='./results/cemaden_ac_santana_sao/cemaden_ac_santana_sao_hourly.csv')
+inmet_df = read_csv(path='./results/inmet_sao_paulo_mirante/inmet_sao_paulo_mirante_hourly.csv')
+inmet_daily_df = read_csv(path='./results/inmet_daily_sao_paulo_mirante/inmet_daily_sao_paulo_mirante_daily.csv')
+
+summary_hourly = pd.concat([
+    precip_summary(inmet_df, "INMET Horário"),
+    precip_summary(cemaden_df, "CEMADEN"),
+    
+])
+print("📊 Base de dados para IDF's históricas: ")
+display(summary_hourly.style.format(precision=2))
+
+'''
 from typing import Optional, List
 cemaden_df = read_csv(path='results/cemaden_ac_santana_sao/cemaden_ac_santana_sao_hourly.csv')
 aggregate_to_csv(df=cemaden_df, name='cemaden_ac_santana_sao', directory='results/cemaden_ac_santana_sao',include_minutes=True,minute_freq=5)
@@ -27,19 +97,20 @@ aggregate_to_csv(df=cemaden_df, name='cemaden_ac_santana_sao', directory='result
   #  dir='results',
   #  plot=True,
 #)
+'''
 
 
 '''
 cemaden_santana = process_data(source=DataSource.CEMADEN, data_path='./datasets/CEMADEN_SP', site_filter='AC Santana', show_station_counts=True, generate_map=True)
 aggregate_to_csv(df=cemaden_santana, name='cemaden_santana', directory='results/cemaden_santana')
 
-inmet_santana = process_data(source=DataSource.INMET_DAILY, data_path='./datasets/INMET_santana/sp-1961-2025.csv')
-aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inmet_santana')
+inmet_santana = process_data(source=DataSource.INMET_DAILY, data_path='./datasets/INMET_DAILY_SAO_PAULO_MIRANTE/inmet_daily_sao_paulo_mirante.csv')
+aggregate_to_csv(df=inmet_santana, name='inmet_sao_paulo_mirante_hourly', directory='results/inmet_sao_paulo_mirante')
 '''
-#finalizar_requisicao_por_id(53956, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
+#finalize_request_by_id(53956, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
 #inmet = get_inmet_data()
-#finalizar_requisicao_por_id(53955, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
-#finalizar_requisicao_por_id(53794, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
+#finalize_request_by_id(53955, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
+#finalize_request_by_id(53794, {'codestacao': '355030811A', 'id_tipoestacao': 1, 'nome': 'AC Santana'}, 'SÃO PAULO')
 #cemaden = get_cemaden_data()
 
 #inmet_df = read_csv(path='results/inmet_santana/inmet_santana_daily.csv')
@@ -49,8 +120,8 @@ aggregate_to_csv(df=inmet_santana, name='inmet_santana', directory='results/inme
         
 #eqm_downscaling(name_obs='inmet_santana', name_gcm_baseline='HADGEM_baseline', name_gcm_future='HADGEM_rcp45', dir_obs='results/inmet_santana', dir_gcm='datasets/GCM')
 
-#finalizar_requisicao_por_id(49444, {'codestacao': '120070801A', 'id_tipoestacao': 1, 'nome': 'Cageacre'}, 'XAPURI')
-#finalizar_requisicao_por_id(53605, {'codestacao': '350570802A', 'id_tipoestacao': 1, 'nome': 'Parque Imperial'}, 'BARUERI')
+#finalize_request_by_id(49444, {'codestacao': '120070801A', 'id_tipoestacao': 1, 'nome': 'Cageacre'}, 'XAPURI')
+#finalize_request_by_id(53605, {'codestacao': '350570802A', 'id_tipoestacao': 1, 'nome': 'Parque Imperial'}, 'BARUERI')
 # process_precipitation_series(file_names=['results/cemaden_santana/cemaden_santana_daily.csv','results/inmet_santana/inmet_santana_daily.csv'])
  
 '''

@@ -12,16 +12,20 @@ from datetime import datetime, timedelta
 from ..processing import aggregate_to_csv
 from ..reader import process_data, DataSource
 
-
-
 UFS_BRASIL = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
     "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
     "SP", "SE", "TO"
 ]
 
-def obter_token(api_url: str) -> dict:
-    """Faz uma requisição POST para obter um token de autenticação."""
+def get_token(api_url: str) -> dict:
+    """
+    Faz uma requisição POST para obter um token de autenticação.
+    Args:
+        api_url (str): A URL do endpoint de autenticação da API.
+    Returns:
+        dict: O JSON da resposta contendo o token.
+    """
     load_dotenv()
     email = os.getenv("CEMADEN_EMAIL")
     password = os.getenv("CEMADEN_PASSWORD")
@@ -41,32 +45,44 @@ def obter_token(api_url: str) -> dict:
         print(f"❌ Falha na comunicação com a API de token: {err}")
         raise
 
-def obter_cidades_por_uf(api_url: str, token: str, uf: str) -> list[dict]:
-    """Busca as cidades de uma UF que possuem estações do Cemaden."""
+def get_cities_by_state(api_url: str, token: str, fu: str) -> list[dict]:
+    """
+    Busca as cidades de uma UF que possuem estações do Cemaden.
+    Args:
+        api_url (str): A URL do endpoint da API.
+        token (str): O token de autenticação JWT.
+        fu (str): A sigla da unidade federativa (UF).
+    """
     if not token:
         raise ValueError("Token de autenticação não pode ser vazio.")
 
     # O token JWT é geralmente enviado no cabeçalho 'Authorization' como 'Bearer [token]'
     # mas seguindo a descrição, enviaremos em um header chamado 'token'.
     headers = {'token': token}
-    params = {'uf': uf, 'formato': 'JSON'}
+    params = {'uf': fu, 'formato': 'JSON'}
 
-    print(f"🗺️  Buscando cidades para a UF: {uf}...")
+    print(f"🗺️  Buscando cidades para a UF: {fu}...")
     try:
         response = requests.get(api_url, headers=headers, params=params, timeout=15)
         response.raise_for_status()
         cidades = response.json()
         if not cidades:
-            print(f"⚠️ Nenhuma cidade com estação encontrada para {uf}.")
+            print(f"⚠️ Nenhuma cidade com estação encontrada para {fu}.")
         return cidades
     except requests.exceptions.RequestException as err:
         print(f"❌ Falha ao buscar cidades: {err}")
         raise
     
-    
-    
-def obter_estacoes_por_municipio(api_url: str, token: str, cod_ibge: str) -> list[dict]:
-    """Busca as estações de monitoramento de um município pelo código IBGE."""
+def get_stations_by_city(api_url: str, token: str, cod_ibge: str) -> list[dict]:
+    """
+    Busca as estações de monitoramento de um município pelo código IBGE.
+    Args:
+        api_url (str): A URL do endpoint da API.
+        token (str): O token de autenticação JWT.
+        cod_ibge (str): O código IBGE do município.
+    Returns:
+        list[dict]: A lista de estações de monitoramento encontradas.
+    """
     if not token:
         raise ValueError("Token de autenticação não pode ser vazio.")
 
@@ -85,18 +101,28 @@ def obter_estacoes_por_municipio(api_url: str, token: str, cod_ibge: str) -> lis
         print(f"❌ Falha ao buscar estações: {err}")
         raise
     
-    
-    
-def agendar_requisicao_dados(api_url: str, token: str, params: dict) -> int | None:
-    """Agenda a requisição de dados históricos e retorna o ID do agendamento."""
+def schedule_data_request(api_url: str, token: str, params: dict) -> int | None:
+    """
+    Agenda a requisição de dados históricos e retorna o ID do agendamento.
+    Args:
+        api_url (str): A URL do endpoint de agendamento da API.
+        token (str): O token de autenticação JWT.
+        params (dict): Dicionário com os parâmetros necessários para o agendamento, contendo:
+            - "arquivo" (str): Tipo de arquivo, geralmente "CSV".
+            - "codestacao" (str): Código da estação.
+            - "datafim" (str): Data final no formato esperado pela API (ex: "YYYYMMDDHHMM").
+            - "datainicio" (str): Data inicial no formato esperado pela API (ex: "YYYYMMDDHHMM").
+            - "rede" (str): Código da rede (ex: "11").
+            - "sensor" (str): Código do sensor (ex: "10").
+            - "uf" (str): Sigla da unidade federativa (UF).
+    Returns:
+        int | None: O ID do agendamento ou None em caso de falha.
+    """
     print("\n📅 Agendando requisição de dados históricos...")
     headers = {'token': token}
     
     try:
-        # --- ALTERAÇÃO AQUI ---
-        # Trocamos requests.post por requests.get, pois a API espera um GET para este endpoint.
         response = requests.get(api_url, headers=headers, params=params, timeout=15)
-        # --- FIM DA ALTERAÇÃO ---
 
         response.raise_for_status()
         
@@ -122,10 +148,20 @@ def agendar_requisicao_dados(api_url: str, token: str, params: dict) -> int | No
         print(f"❌ Falha na comunicação ao agendar requisição: {err}")
         raise
 
-
-
-def verificar_status_agendamento(api_url: str, token: str, job_id: int, nome_da_estacao: dict, cidade_escolhida: str, max_tentativas: int = 20, delay_segundos: int = 15) -> dict | None:
-    """Verifica o status de um agendamento (polling) até que esteja concluído ou falhe."""
+def check_scheduling_status(api_url: str, token: str, job_id: int, station_name: dict, selected_city: str, max_attempts: int = 20, delay_seconds: int = 15) -> dict | None:
+    """
+    Verifica o status de um agendamento (polling) até que esteja concluído ou falhe.
+    Args:
+        api_url (str): A URL do endpoint de status da API.
+        token (str): O token de autenticação JWT.
+        job_id (int): O ID do agendamento a ser verificado.
+        station_name (dict): O dicionário com os dados da estação selecionada.
+        selected_city (str): O nome da cidade selecionada.
+        max_attempts (int): Número máximo de tentativas de verificação.
+        delay_seconds (int): Tempo em segundos entre cada tentativa.
+    Returns:
+        dict | None: O dicionário com os dados do agendamento final ou None se não for concluído.
+    """
     print(f"\n⏳ Iniciando verificação de status para o Agendamento ID: {job_id}.")
     print("Isso pode levar alguns minutos. O script irá verificar automaticamente.")
 
@@ -133,10 +169,10 @@ def verificar_status_agendamento(api_url: str, token: str, job_id: int, nome_da_
         'token': token,
         'Accept': 'application/json'
     }
-    
-    for tentativa in range(1, max_tentativas + 1):
+
+    for attempt in range(1, max_attempts + 1):
         try:
-            print(f"   Tentativa {tentativa}/{max_tentativas}... Verificando status...")
+            print(f"   Tentativa {attempt}/{max_attempts}... Verificando status...")
             response = requests.get(api_url, headers=headers, timeout=15)
             response.raise_for_status()
             
@@ -156,32 +192,27 @@ def verificar_status_agendamento(api_url: str, token: str, job_id: int, nome_da_
                     return meu_agendamento
             
             # Se não for um status final, espera para a próxima tentativa
-            time.sleep(delay_segundos)
+            time.sleep(delay_seconds)
 
         except requests.exceptions.RequestException as err:
-            print(f"   Houve um erro na tentativa {tentativa}: {err}. Tentando novamente em {delay_segundos}s.")
-            time.sleep(delay_segundos)
-    
-    print(f"⌛ O tempo limite de verificação foi atingido ({max_tentativas * delay_segundos}s).")
+            print(f"   Houve um erro na tentativa {attempt}: {err}. Tentando novamente em {delay_seconds}s.")
+            time.sleep(delay_seconds)
+
+    print(f"⌛ O tempo limite de verificação foi atingido ({max_attempts * delay_seconds}s).")
     print("\nO processamento pode estar demorando mais que o esperado.")
     print(f"Você pode verificar o status manualmente mais tarde. O ID do seu agendamento é: {job_id}")
     print(f"\nVerifique da seguinte forma:")    
-    print(f"\tfinalizar_requisicao_por_id({job_id}, {nome_da_estacao}, '{cidade_escolhida}')\n")
+    print(f"\tfinalize_request_by_id({job_id}, {station_name}, '{selected_city}')\n")
 
-    
     return None
 
-
-
-
-
-def converter_data_br_para_api(data_str_br: str, tipo: str) -> str | None:
+def convert_date_br_to_api(data_str_br: str, hourType: str) -> str | None:
     """
     Converte uma data do formato brasileiro (DD/MM/AAAA) para o formato da API (aaaaMMddHHmm).
 
     Args:
         data_str_br (str): A data no formato "DD/MM/AAAA".
-        tipo (str): 'inicio' para adicionar o horário "0000" ou 'fim' para "2359".
+        hourType (str): 'inicio' para adicionar o horário "0000" ou 'fim' para "2359".
 
     Returns:
         str | None: A data convertida ou None se o formato for inválido.
@@ -191,9 +222,9 @@ def converter_data_br_para_api(data_str_br: str, tipo: str) -> str | None:
         data_obj = datetime.strptime(data_str_br, "%d/%m/%Y")
         
         # 2. Formata a data para 'aaaaMMdd' e adiciona o horário apropriado
-        if tipo == 'inicio':
+        if hourType == 'inicio':
             return data_obj.strftime("%Y%m%d") + "0000"
-        elif tipo == 'fim':
+        elif hourType == 'fim':
             return data_obj.strftime("%Y%m%d") + "2359"
         else:
             return None # Tipo inválido
@@ -202,45 +233,45 @@ def converter_data_br_para_api(data_str_br: str, tipo: str) -> str | None:
         # Retorna None se a data digitada não corresponder ao formato "DD/MM/AAAA"
         return None
     
-    
-    
-def normalizar_nome(nome: str) -> str:
+def normalize_name(name: str) -> str:
     """
     Remove acentos, converte para maiúsculas e substitui espaços por underscores.
     Exemplo: "Pluviômetro Automático A001" -> "PLUVIOMETRO_AUTOMATICO_A001"
     """
     # Normaliza para separar os caracteres dos acentos (forma NFD)
-    nfkd_form = unicodedata.normalize('NFD', nome)
+    nfkd_form = unicodedata.normalize('NFD', name)
     # Codifica para ASCII ignorando os acentos, depois decodifica de volta para string
-    nome_sem_acentos = u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
-    
+    name_without_accents = u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
+
     # Converte para maiúsculas e substitui espaços
-    return nome_sem_acentos.upper().replace(' ', '_')
+    return name_without_accents.upper().replace(' ', '_')
 
-
-
-def gerar_sigla(nome: str) -> str:
+def generate_acronym(name: str) -> str:
     """
     Gera sigla do nome.
     Exemplo: "TAUBATE" -> "TAU"
     """
-    nome_sem_espacos = nome.replace(" ", "")
-    return nome_sem_espacos[:3].upper()
-    
+    name_without_spaces = name.replace(" ", "")
+    return name_without_spaces[:3].upper()
 
-
-def baixar_e_extrair_csv(link_download: str, nome_estacao: str, cidade: str) -> tuple:
+def download_and_extract_csv(download_link: str, station_name: str, city: str) -> tuple[str, str]:
     """
     Baixa, transforma e salva o CSV. Se o arquivo já existir,
     integra os novos dados, remove duplicatas e reordena.
+    Args:
+        download_link (str): O link para download do arquivo .zip.
+        station_name (str): O nome da estação para nomear o arquivo.
+        city (str): O nome da cidade para gerar a sigla.
+    Returns:
+        tuple[str, str]: O caminho da pasta onde o arquivo foi salvo e o nome base formatado.
     """
-    if not link_download:
+    if not download_link:
         print("❌ Link de download inválido.")
-        return
+        return "", ""
 
     print(f"\n⏬ Baixando dados do link...")
     try:
-        response = requests.get(link_download)
+        response = requests.get(download_link)
         response.raise_for_status()
         zip_buffer = io.BytesIO(response.content)
 
@@ -253,12 +284,12 @@ def baixar_e_extrair_csv(link_download: str, nome_estacao: str, cidade: str) -> 
                         conteudo_original_bytes = f.read()
 
                     # Transforma os novos dados e já os prepara em um DataFrame
-                    conteudo_final_str = limpar_e_transformar_csv(conteudo_original_bytes)
+                    conteudo_final_str = clean_and_transform_csv(conteudo_original_bytes)
                     df_novo = pd.read_csv(io.StringIO(conteudo_final_str), sep=';')
                     
                     # Prepara nomes da pasta e do arquivo final
-                    estacao_formatada = normalizar_nome(nome_estacao)
-                    sigla = gerar_sigla(normalizar_nome(cidade))
+                    estacao_formatada = normalize_name(station_name)
+                    sigla = generate_acronym(normalize_name(city))
                     nome_base_formatado = f"{estacao_formatada}_{sigla}"
                     pasta_destino = f"./datasets/CEMADEN_{nome_base_formatado}"
                     nome_arquivo_final = f"cemaden_{nome_base_formatado.lower()}.csv"
@@ -305,15 +336,13 @@ def baixar_e_extrair_csv(link_download: str, nome_estacao: str, cidade: str) -> 
         print("❌ O arquivo baixado não é um .zip válido.")
     except Exception as e:
         print(f"❌ Ocorreu um erro inesperado durante a extração: {e}")
-      
-      
         
-def limpar_e_transformar_csv(conteudo_csv_original: bytes) -> str:
+def clean_and_transform_csv(csv_original_content: bytes) -> str:
     """
     Lê o conteúdo de um CSV, limpa, transforma e o retorna como uma string no formato final.
     
     Args:
-        conteudo_csv_original (bytes): O conteúdo binário do arquivo CSV baixado.
+        csv_original_content (bytes): O conteúdo binário do arquivo CSV baixado.
 
     Returns:
         str: O conteúdo do novo CSV formatado como uma string.
@@ -321,7 +350,7 @@ def limpar_e_transformar_csv(conteudo_csv_original: bytes) -> str:
     print("🧹 Limpando e transformando os dados...")
     
     # Usa io.BytesIO para ler o conteúdo binário como se fosse um arquivo
-    df = pd.read_csv(io.BytesIO(conteudo_csv_original), sep=',')
+    df = pd.read_csv(io.BytesIO(csv_original_content), sep=',')
 
     # 1. Manter apenas as colunas que nos interessam
     colunas_para_manter = [
@@ -360,9 +389,7 @@ def limpar_e_transformar_csv(conteudo_csv_original: bytes) -> str:
     print("✨ Transformação concluída!")
     return csv_final_string
 
-
-
-def finalizar_requisicao_por_id(job_id: int, estacao_final: dict, cidade_escolhida: str, token: str = None, process: bool = True):
+def finalize_request_by_id(job_id: int, final_station: dict, selected_city: str, token: str | None = None, process: bool = True) -> pd.DataFrame | None:
     """
     Verifica o status de um agendamento existente e, se concluído,
     baixa, processa e salva os dados.
@@ -370,8 +397,8 @@ def finalizar_requisicao_por_id(job_id: int, estacao_final: dict, cidade_escolhi
     Args:
         job_id (int): O ID do agendamento a ser verificado.
         token (str): O token de autenticação.
-        estacao_final (dict): O dicionário com os dados da estação selecionada.
-        cidade_escolhida (str): O nome da cidade selecionada.
+        final_station (dict): O dicionário com os dados da estação selecionada.
+        selected_city (str): O nome da cidade selecionada.
         process (bool): Flag para determinar se o pós-processamento deve ocorrer.
     
     Returns:
@@ -383,15 +410,15 @@ def finalizar_requisicao_por_id(job_id: int, estacao_final: dict, cidade_escolhi
     
     try:
         if not token:
-            resposta_token = obter_token(TOKEN_URL)
+            resposta_token = get_token(TOKEN_URL)
             token = resposta_token.get("access_token") or resposta_token.get("token")
             if not token:
                 print("❌ Não foi possível extrair o token da resposta da API.")
-                return # Usamos return em vez de exit() para sair da função
+                return None
 
             print("✅ Token recebido com sucesso!\n")
     
-        resultado_final = verificar_status_agendamento(STATUS_URL, token, job_id, estacao_final, cidade_escolhida)
+        resultado_final = check_scheduling_status(STATUS_URL, token, job_id, final_station, selected_city)
         
         if resultado_final:
             status_final = resultado_final.get("status", {}).get("description")
@@ -406,11 +433,11 @@ def finalizar_requisicao_por_id(job_id: int, estacao_final: dict, cidade_escolhi
                 print(f"\n   ➡️   {link_download}\n")
                 
                 # Nota: Ajustei a chamada para a sua versão com 3 argumentos
-                # Verifique se a sua função `baixar_e_extrair_csv` realmente precisa de `cidade_escolhida`
+                # Verifique se a sua função `download_and_extract_csv` realmente precisa de `selected_city`
                 
-                nome_da_estacao = estacao_final.get('nome', 'ESTACAO_DESCONHECIDA')
+                nome_da_estacao = final_station.get('nome', 'ESTACAO_DESCONHECIDA')
                 
-                caminho_final, nome_limpo = baixar_e_extrair_csv(link_download, nome_da_estacao, cidade_escolhida)
+                caminho_final, nome_limpo = download_and_extract_csv(link_download, nome_da_estacao, selected_city)
                 
                 # Pós‑processamento
                 if process and caminho_final:
@@ -436,7 +463,6 @@ def finalizar_requisicao_por_id(job_id: int, estacao_final: dict, cidade_escolhi
             else:
                 print("❌ Não foi possível obter o link de download.")
                 print("="*50)
-        
         return None
     
     except (ValueError, requests.exceptions.RequestException) as e:
@@ -444,8 +470,6 @@ def finalizar_requisicao_por_id(job_id: int, estacao_final: dict, cidade_escolhi
     except (KeyboardInterrupt, SystemExit) as e:
         if str(e): print(f"\n👋 {e}")
         else: print("\n👋 Operação interrompida pelo usuário.")
-
-
 
 def get_cemaden_data():
     """
@@ -459,11 +483,11 @@ def get_cemaden_data():
 
     try:
         # Etapa 1: Obter o token
-        resposta_token = obter_token(TOKEN_URL)
+        resposta_token = get_token(TOKEN_URL)
         meu_token = resposta_token.get("access_token") or resposta_token.get("token")
         if not meu_token:
             print("❌ Não foi possível extrair o token da resposta da API.")
-            return # Usamos return em vez de exit() para sair da função
+            return
 
         print("✅ Token recebido com sucesso!\n")
 
@@ -474,7 +498,7 @@ def get_cemaden_data():
             return
 
         # Etapa 3: Escolher Cidade
-        lista_cidades = obter_cidades_por_uf(CIDADES_URL, meu_token, uf_escolhida)
+        lista_cidades = get_cities_by_state(CIDADES_URL, meu_token, uf_escolhida)
         if not lista_cidades: return
         
         nomes_cidades = [c["cidade"] for c in lista_cidades]
@@ -489,7 +513,7 @@ def get_cemaden_data():
             return
         
         # Etapa 4: Buscar e escolher a estação
-        lista_estacoes = obter_estacoes_por_municipio(ESTACOES_URL, meu_token, str(cod_ibge_selecionado))
+        lista_estacoes = get_stations_by_city(ESTACOES_URL, meu_token, str(cod_ibge_selecionado))
         if not lista_estacoes: return
         
         opcoes_estacao = [f"{e.get('codestacao', 'S/C')} - {e.get('nome', 'S/N')}" for e in lista_estacoes]
@@ -508,7 +532,7 @@ def get_cemaden_data():
         while True:
             data_inicio_br = questionary.text("Digite a data inicial (formato DD/MM/AAAA):").ask()
             if data_inicio_br is None: print("Operação cancelada."); return
-            if converter_data_br_para_api(data_inicio_br, 'inicio'): break 
+            if convert_date_br_to_api(data_inicio_br, 'inicio'): break 
             print("❌ Formato de data inválido. Por favor, use DD/MM/AAAA.")
 
         data_inicio_obj = datetime.strptime(data_inicio_br, "%d/%m/%Y")
@@ -523,25 +547,28 @@ def get_cemaden_data():
         while True:
             data_fim_br = questionary.text("Digite a data final (formato DD/MM/AAAA):").ask()
             if data_fim_br is None: print("Operação cancelada."); return
-            data_fim_api = converter_data_br_para_api(data_fim_br, 'fim')
+            data_fim_api = convert_date_br_to_api(data_fim_br, 'fim')
             if not data_fim_api: print("❌ Formato de data inválido. Por favor, use DD/MM/AAAA."); continue
             data_fim_obj = datetime.strptime(data_fim_br, "%d/%m/%Y")
             if data_fim_obj < data_inicio_obj: print(f"❌ Erro: A data final ({data_fim_br}) não pode ser anterior à data inicial ({data_inicio_br})."); continue
             break
 
-        data_inicio_api = converter_data_br_para_api(data_inicio_br, 'inicio')
+        data_inicio_api = convert_date_br_to_api(data_inicio_br, 'inicio')
         params_agendamento = {
-            "arquivo": "CSV", "codestacao": estacao_final.get('codestacao'),
-            "datafim": data_fim_api, "datainicio": data_inicio_api, 
-            "rede": "11", "sensor": "10","uf": uf_escolhida,
+            "arquivo": "CSV", 
+            "codestacao": estacao_final.get('codestacao'),
+            "datafim": data_fim_api, 
+            "datainicio": data_inicio_api, 
+            "rede": "11", 
+            "sensor": "10",
+            "uf": uf_escolhida,
         }
-        
-        
-        job_id = agendar_requisicao_dados(AGENDAMENTO_URL, meu_token, params_agendamento)
-        
+
+        job_id = schedule_data_request(AGENDAMENTO_URL, meu_token, params_agendamento)
+
         if job_id:
             # Agora a main apenas delega a finalização para a nova função
-            finalizar_requisicao_por_id(job_id, estacao_final, cidade_escolhida, meu_token, process=True)
+            finalize_request_by_id(job_id, estacao_final, cidade_escolhida, meu_token, process=True)
 
     except (ValueError, requests.exceptions.RequestException) as e:
         print(f"\nOcorreu um erro e o programa será encerrado: {e}")
