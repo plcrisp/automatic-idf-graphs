@@ -14,11 +14,15 @@ requires-python = ">=3.9"
 
 dependencies = [
     "folium",
+    "geopy",
+    "google-auth",
+    "google-api-python-client",
     "matplotlib",
     "numpy",
     "pandas",
     "pymannkendall",
     "python-dotenv",
+    "PyYAML",
     "questionary",
     "requests",
     "scikit-learn",

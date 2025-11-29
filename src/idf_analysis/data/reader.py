@@ -185,7 +185,18 @@ def process_data(source: DataSource, data_path: str, site_filter: Optional[str] 
 
         df.columns = pd.Index(['Date', 'Hour', 'Precipitation']) if is_hourly else pd.Index(['Date', 'Precipitation'])
 
-        df['Date'] = pd.to_datetime(df['Date'], format="%d/%m/%Y", errors='coerce')
+                # Normaliza strings de data
+        df['Date'] = df['Date'].astype(str).str.strip().replace({'': None})
+
+        # Tenta parsear primeiro como ISO 'YYYY-MM-DD'
+        date_iso = pd.to_datetime(df['Date'], format='%Y-%m-%d', errors='coerce')
+        # Se falhar, tenta o formato brasileiro 'DD/MM/YYYY'
+        date_dmy = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
+        # Fallback: deixa o pandas inferir (dayfirst=True ajuda em formatos ambíguos)
+        date_fallback = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
+
+        # Combina resultados, priorizando ISO, depois DMY, depois fallback
+        df['Date'] = date_iso.fillna(date_dmy).fillna(date_fallback)
         df['Year'] = df['Date'].dt.year
         df['Month'] = df['Date'].dt.month
         df['Day'] = df['Date'].dt.day

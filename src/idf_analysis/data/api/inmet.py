@@ -92,7 +92,7 @@ def get_inmet_data(
     ).ask()
 
     cod_estacao = estacao_str.split("(")[-1].rstrip(")")
-    nome_estacao = estacao_str.split(" (")[0]
+    nome_estacao = estacao_str.split(" (")[0].replace("- ", "").strip()
     data_inicio_operacao = pd.to_datetime(
         df_estado.loc[df_estado["CD_ESTACAO"] == cod_estacao, "DT_INICIO_OPERACAO"].iat[0]
     ).to_pydatetime()
@@ -217,7 +217,7 @@ def get_inmet_data(
     print(f"\n✅ Dados salvos em: {caminho_csv}")
     
     # Pós‑processamento
-    if process:
+    if process and caminho_csv:
         print()
         df = process_data(
             source=DataSource.INMET,
@@ -231,3 +231,6 @@ def get_inmet_data(
         )
         
         return df
+    else:
+        print("Pós-processamento não aplicado. Arquivo bruto salvo.")
+        return None
