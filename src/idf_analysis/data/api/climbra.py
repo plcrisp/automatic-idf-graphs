@@ -7,8 +7,62 @@ import questionary
 import pandas as pd
 import numpy as np
 import time
+from urllib.parse import urlparse, parse_qs, unquote
+import requests
+import math
+from pathlib import Path
 
 
+class AllowedRootFolders:
+    """
+    Constantes para pastas raiz permitidas no navegador CLIMBra.
+    
+    Usage:
+        >>> choose_and_download_climbra_dataset(
+        ...     allowed_roots=[AllowedRootFolders.GriddedData, AllowedRootFolders.ETo]
+        ... )
+    """
+    CatchmentsDataV3 = "Catchments-Data-v3"
+    GriddedData = "Gridded data"
+    EnsembleData = "Ensemble data"
+    ETo = "ETo"
+    
+    @classmethod
+    def all(cls) -> list[str]:
+        """Retorna todas as pastas raiz disponíveis."""
+        return [cls.CatchmentsDataV3, cls.GriddedData, cls.EnsembleData, cls.ETo]
+    
+    @classmethod
+    def default(cls) -> list[str]:
+        """Retorna a lista padrão de pastas raiz."""
+        return [cls.CatchmentsDataV3, cls.GriddedData]
+
+
+class AllowedExtraFiles:
+    """
+    Constantes para arquivos extras sempre incluídos no navegador CLIMBra.
+    
+    Usage:
+        >>> choose_and_download_climbra_dataset(
+        ...     allowed_extra_files=[AllowedExtraFiles.ReadMe]
+        ... )
+    """
+    ReadMe = "READ_ME_paper2.docx"
+    
+    @classmethod
+    def all(cls) -> list[str]:
+        """Retorna todos os arquivos extras disponíveis."""
+        return [cls.ReadMe]
+    
+    @classmethod
+    def default(cls) -> list[str]:
+        """Retorna a lista padrão de arquivos extras."""
+        return cls.all()
+
+
+# Aliases para compatibilidade com código existente
+ALLOWED_ROOT_FOLDERS_DEFAULT = AllowedRootFolders.default()
+ALLOWED_EXTRA_FILES_DEFAULT = AllowedExtraFiles.default()
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """
@@ -357,3 +411,433 @@ def get_climbra_data():
         return None
 
     return selection_info
+
+
+# ===============================
+# Navegação de datasets
+# ===============================
+
+def _read_dataset_index_from_resource() -> list[str]:
+    """
+    Lê o arquivo de índice (TXT) com URLs de datasets do CLIMBra a partir dos recursos do pacote.
+
+    Returns:
+        list[str]: Lista de URLs (uma por linha) sem linhas vazias/comentários.
+    """
+    resource_name = 'climbra_datasets.txt'
+    try:
+        with resources.files('idf_analysis.resources').joinpath(resource_name).open('r', encoding='utf-8') as f:
+            lines = [ln.strip() for ln in f.readlines()]
+        # Filtra vazias e comentários
+        lines = [ln for ln in lines if ln and not ln.lstrip().startswith('#')]
+        return lines
+    except FileNotFoundError:
+        print(f"❌ Arquivo de índice '{resource_name}' não encontrado em idf_analysis.resources")
+        return []
+
+
+def _parse_dataset_entry(url: str) -> dict:
+    """
+    Faz o parse de uma URL do repositório e extrai caminho, nome do arquivo e outros metadados.
+
+    A URL esperada possui query params `path` (diretório no servidor) e `fileName` (nome do arquivo).
+
+    Returns:
+        dict: { 'url', 'file_name', 'path', 'segments', 'full_path' }
+    """
+    try:
+        pr = urlparse(url)
+        qs = parse_qs(pr.query)
+        p = unquote(qs.get('path', [''])[0])  # ex: /V5/Gridded data/pr/ssp585/...
+        file_name = unquote(qs.get('fileName', [''])[0])
+        # Normaliza e quebra em segmentos (ignora vazio inicial e opcional 'V5')
+        parts = [seg for seg in p.split('/') if seg]
+        if parts and parts[0] == 'V5':
+            parts = parts[1:]
+        full_path = '/'.join(parts + ([file_name] if file_name else []))
+        return {
+            'url': url,
+            'file_name': file_name or url.split('/')[-1],
+            'path': p,
+            'segments': parts,
+            'full_path': full_path,
+        }
+    except Exception:
+        # Em caso de formato inesperado, retorna mínimos
+        return {
+            'url': url,
+            'file_name': url.split('/')[-1],
+            'path': '',
+            'segments': [],
+            'full_path': url,
+        }
+
+
+def _build_tree(entries: list[dict]) -> dict:
+    """
+    Constrói uma árvore de navegação (pastas/arquivos) a partir das entradas parseadas.
+
+    Estrutura do nó:
+      {
+        '_files': [ {'name': str, 'url': str, 'full_path': str} ],
+        '<folder>': { ...subtree... }
+      }
+    """
+    root: dict = {'_files': []}
+    for e in entries:
+        node = root
+        for seg in e['segments']:
+            node = node.setdefault(seg, {'_files': []})
+        node['_files'].append({'name': e['file_name'], 'url': e['url'], 'full_path': e['full_path']})
+    return root
+
+
+def _list_node(node: dict) -> tuple[list[str], list[dict]]:
+    """Retorna (subpastas, arquivos) do nó atual, ordenados."""
+    folders = sorted([k for k in node.keys() if k != '_files'])
+    files = sorted(node.get('_files', []), key=lambda x: x['name'])
+    return folders, files
+
+
+def _search_files(root: dict, query: str) -> list[dict]:
+    """Busca arquivos por substring em nome ou caminho completo."""
+    results = []
+
+    def dfs(node: dict, path: list[str]):
+        for f in node.get('_files', []):
+            full = '/'.join(path + [f['name']])
+            if query.lower() in f['name'].lower() or query.lower() in full.lower():
+                results.append({'display': full, **f})
+        for k, v in node.items():
+            if k == '_files':
+                continue
+            dfs(v, path + [k])
+
+    dfs(root, [])
+    # Ordena por caminho
+    results.sort(key=lambda x: x['display'])
+    return results
+
+
+def choose_climbra_dataset_url(
+    allowed_roots: list[str] | None = None,
+    allowed_extra_files: list[str] | None = None,
+) -> str | None:
+    """
+    Abre um navegador interativo no terminal para selecionar um dataset do CLIMBra
+    a partir do índice TXT empacotado no pacote. Ao final, retorna a URL selecionada.
+
+    Fluxo:
+      1) Lê o arquivo TXT em idf_analysis.resources (uma URL por linha)
+      2) Constrói uma árvore de pastas baseada no parâmetro `path` de cada URL
+      3) Permite navegar por pastas, buscar por nome e selecionar um arquivo
+
+    Args:
+        allowed_roots: Lista de pastas raiz que serão exibidas (default: AllowedRootFolders.default())
+        allowed_extra_files: Lista de nomes de arquivos a sempre incluir (default: AllowedExtraFiles.default())
+
+    Returns:
+        str | None: URL selecionada ou None se o usuário cancelar.
+        
+    Examples:
+        >>> # Usar padrão (todas as pastas)
+        >>> url = choose_climbra_dataset_url()
+        
+        >>> # Filtrar apenas dados gridados
+        >>> url = choose_climbra_dataset_url(
+        ...     allowed_roots=[AllowedRootFolders.GriddedData]
+        ... )
+        
+        >>> # Múltiplas pastas
+        >>> url = choose_climbra_dataset_url(
+        ...     allowed_roots=[AllowedRootFolders.GriddedData, AllowedRootFolders.ETo]
+        ... )
+    """
+    urls = _read_dataset_index_from_resource()
+    if not urls:
+        return None
+
+    allowed_roots = allowed_roots if allowed_roots is not None else AllowedRootFolders.default()
+    allowed_extra_files = allowed_extra_files if allowed_extra_files is not None else AllowedExtraFiles.default()
+
+    entries_all = [_parse_dataset_entry(u) for u in urls]
+
+    # Filtra por pastas raiz permitidas OU arquivos extras explicitamente permitidos
+    entries = []
+    for e in entries_all:
+        root = e['segments'][0] if e['segments'] else ''
+        if root in allowed_roots or e['file_name'] in allowed_extra_files:
+            entries.append(e)
+
+    tree = _build_tree(entries)
+
+    # Navegação
+    path_stack: list[tuple[str, dict]] = [('root', tree)]
+
+    while True:
+        current_name, current_node = path_stack[-1]
+        folders, files = _list_node(current_node)
+
+        breadcrumb = ' / '.join([p[0] for p in path_stack])
+        choices = []
+        # Pastas
+        for d in folders:
+            choices.append(questionary.Choice(title=f"📁 {d}", value=("dir", d)))
+        # Arquivos
+        for f in files:
+            choices.append(questionary.Choice(title=f"📄 {f['name']}", value=("file", f)))
+
+        # Ações especiais
+        actions = [
+            questionary.Choice(title="🔎 Buscar por nome...", value=("search", None)),
+        ]
+        if len(path_stack) > 1:
+            actions.insert(0, questionary.Choice(title="⬆️  Voltar", value=("up", None)))
+        actions.append(questionary.Choice(title="❌ Cancelar", value=("cancel", None)))
+
+        answer = questionary.select(
+            message=f"Selecione ( {breadcrumb} )",
+            choices=choices + [questionary.Separator("-"*24)] + actions,
+            qmark="🌐"
+        ).ask()
+
+        if answer is None:
+            return None
+
+        kind, payload = answer
+        if kind == 'dir':
+            # Entra na subpasta
+            path_stack.append((payload, current_node[payload]))
+            continue
+        elif kind == 'up':
+            if len(path_stack) > 1:
+                path_stack.pop()
+            continue
+        elif kind == 'file':
+            # Confirmação antes de retornar
+            confirm = questionary.confirm(
+                f"Baixar arquivo: {payload['name']}?"
+            ).ask()
+            if confirm:
+                return payload['url']
+            else:
+                continue
+        elif kind == 'search':
+            query = questionary.text("Digite parte do nome do arquivo (ex: pr-ssp585, .nc, .csv):").ask()
+            if not query:
+                continue
+            results = _search_files(tree, query)
+            if not results:
+                print("🔍 Nenhum resultado encontrado.")
+                continue
+            sel = questionary.select(
+                message=f"Resultados para '{query}':",
+                choices=[questionary.Choice(title=f"📄 {r['display']}", value=r) for r in results] + [questionary.Choice(title="⬅️  Voltar", value=None)],
+                qmark="🔎",
+            ).ask()
+            if sel is None:
+                continue
+            # Confirma
+            confirm = questionary.confirm(
+                f"Baixar arquivo: {sel['display']}?"
+            ).ask()
+            if confirm:
+                return sel['url']
+            else:
+                continue
+        elif kind == 'cancel':
+            return None
+
+    # Fallback
+    return None
+
+
+def _derive_filename_from_url(url: str) -> str:
+    """Tenta derivar o nome do arquivo a partir dos parâmetros da URL ou últimos segmentos."""
+    pr = urlparse(url)
+    qs = parse_qs(pr.query)
+    file_name = qs.get('fileName', [None])[0]
+    if file_name:
+        return unquote(file_name)
+    # fallback usando path
+    tail = pr.path.rstrip('/').split('/')[-1]
+    return tail or 'download.bin'
+
+
+def download_climbra_dataset(
+    url: str,
+    output_dir: str = './downloads/climbra',
+    chunk_size: int = 1 << 14,
+    max_retries: int = 3,
+    timeout: int = 30,
+    show_progress: bool = True,
+) -> Path | None:
+    """
+    Faz download streaming de um dataset CLIMBra com barras de progresso e estimativa de tempo.
+
+    Args:
+        url: URL completa do arquivo.
+        output_dir: Diretório onde salvar.
+        chunk_size: Tamanho do bloco (bytes) para leitura streaming.
+        max_retries: Número máximo de tentativas em falha transitória.
+        timeout: Timeout da requisição (segundos).
+        show_progress: Se True, imprime progresso percentual, velocidade e tempo estimado.
+
+    Returns:
+        Path | None: Caminho do arquivo salvo ou None em caso de falha.
+    """
+    if not url:
+        print('❌ URL vazia fornecida.')
+        return None
+
+    filename = _derive_filename_from_url(url)
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / filename
+
+    attempt = 0
+    while attempt < max_retries:
+        attempt += 1
+        try:
+            print(f"\n🌐 Download (tentativa {attempt}/{max_retries}): {url}")
+            with requests.get(url, stream=True, timeout=timeout) as resp:
+                status = resp.status_code
+                if status != 200:
+                    print(f"❌ HTTP {status}: Falha ao iniciar download")
+                    continue
+                total = resp.headers.get('Content-Length')
+                total_bytes = int(total) if total and total.isdigit() else None
+                received = 0
+                start_time = time.time()
+                speed_samples = []
+
+                with open(out_path, 'wb') as f:
+                    for chunk in resp.iter_content(chunk_size=chunk_size):
+                        if not chunk:
+                            continue
+                        f.write(chunk)
+                        received += len(chunk)
+                        if show_progress:
+                            elapsed = time.time() - start_time
+                            if elapsed > 0:
+                                speed = received / elapsed  # bytes/s
+                                speed_samples.append(speed)
+                            if total_bytes:
+                                pct = received / total_bytes * 100
+                                bar_len = 40
+                                filled = int(bar_len * pct / 100)
+                                bar = '█' * filled + '░' * (bar_len - filled)
+                                human_total = _human_readable_size(total_bytes)
+                                human_recv = _human_readable_size(received)
+                                
+                                # Estimativa de tempo restante
+                                eta_str = ''
+                                if speed > 0 and pct > 0:
+                                    remaining_bytes = total_bytes - received
+                                    eta_seconds = remaining_bytes / speed
+                                    if eta_seconds < 60:
+                                        eta_str = f" | ETA: {int(eta_seconds)}s"
+                                    elif eta_seconds < 3600:
+                                        eta_str = f" | ETA: {int(eta_seconds/60)}m {int(eta_seconds%60)}s"
+                                    else:
+                                        eta_str = f" | ETA: {int(eta_seconds/3600)}h {int((eta_seconds%3600)/60)}m"
+                                
+                                status = (
+                                    f"⬇️  [{bar}] {pct:6.2f}% {human_recv}/{human_total}  "
+                                    f"{_human_readable_size(int(speed))}/s{eta_str}"
+                                )
+                                # \x1b[K limpa até o fim da linha para evitar artefatos como 'MB/sB/ss'
+                                print(f"\r{status}\x1b[K", end='', flush=True)
+                            else:
+                                human_recv = _human_readable_size(received)
+                                print(f"\r⬇️  {human_recv} recebidos...\x1b[K", end='', flush=True)
+                if show_progress:
+                    print()  # nova linha
+                print(f"✅ Download concluído: {out_path} ({_human_readable_size(received)})")
+                return out_path
+        except requests.RequestException as e:
+            print(f"⚠️  Erro de rede: {e}")
+        except Exception as e:
+            print(f"⚠️  Erro inesperado: {e}")
+        print("🔁 Re-tentando...")
+
+    print("❌ Todas as tentativas de download falharam.")
+    return None
+
+
+def _human_readable_size(n_bytes: int) -> str:
+    """Converte bytes em formato legível (KB/MB/GB)."""
+    if n_bytes < 1024:
+        return f"{n_bytes} B"
+    exp = int(math.log(n_bytes, 1024))
+    units = ['B', 'KB', 'MB', 'GB', 'TB']
+    exp = min(exp, len(units) - 1)
+    value = n_bytes / (1024 ** exp)
+    return f"{value:.2f} {units[exp]}"
+
+
+def choose_and_download_climbra_dataset(
+    output_dir: str = './downloads/climbra',
+    allowed_roots: list[str] | None = None,
+    allowed_extra_files: list[str] | None = None,
+    chunk_size: int = 1 << 14,
+    max_retries: int = 3,
+    timeout: int = 30,
+    show_progress: bool = True,
+) -> Path | None:
+    """
+    Combina seleção interativa e download em uma única chamada.
+
+    Args:
+        output_dir: Diretório onde o arquivo será salvo (default: './downloads/climbra')
+        allowed_roots: Lista de pastas raiz a mostrar no navegador. Use AllowedRootFolders.* para acesso às constantes.
+                      (default: AllowedRootFolders.default() - todas as pastas)
+        allowed_extra_files: Lista de arquivos específicos sempre incluídos. Use AllowedExtraFiles.* para acesso.
+                            (default: AllowedExtraFiles.default())
+        chunk_size: Tamanho do bloco de download em bytes (default: 16384)
+        max_retries: Número máximo de tentativas em caso de falha (default: 3)
+        timeout: Timeout da requisição em segundos (default: 30)
+        show_progress: Mostrar barra de progresso e ETA (default: True)
+
+    Returns:
+        Path | None: Caminho do arquivo salvo ou None se cancelado/falha.
+        
+    Examples:
+        >>> # Uso básico com filtros padrão (todas as pastas)
+        >>> file_path = choose_and_download_climbra_dataset()
+        
+        >>> # Filtrar apenas dados gridados
+        >>> file_path = choose_and_download_climbra_dataset(
+        ...     allowed_roots=[AllowedRootFolders.GriddedData],
+        ...     output_dir='./meus_dados'
+        ... )
+        
+        >>> # Múltiplas pastas específicas
+        >>> file_path = choose_and_download_climbra_dataset(
+        ...     allowed_roots=[AllowedRootFolders.GriddedData, AllowedRootFolders.ETo],
+        ...     chunk_size=65536,
+        ...     max_retries=5
+        ... )
+        
+        >>> # Apenas catchments com arquivo README
+        >>> file_path = choose_and_download_climbra_dataset(
+        ...     allowed_roots=[AllowedRootFolders.CatchmentsDataV3],
+        ...     allowed_extra_files=[AllowedExtraFiles.ReadMe],
+        ...     timeout=60
+        ... )
+    """
+    url = choose_climbra_dataset_url(
+        allowed_roots=allowed_roots,
+        allowed_extra_files=allowed_extra_files,
+    )
+    if not url:
+        print('❌ Seleção cancelada ou sem URL.')
+        return None
+    return download_climbra_dataset(
+        url=url,
+        output_dir=output_dir,
+        chunk_size=chunk_size,
+        max_retries=max_retries,
+        timeout=timeout,
+        show_progress=show_progress,
+    )

@@ -467,7 +467,9 @@ def finalize_request_by_id(
                     aggregate_to_csv(
                         df=df,
                         name='cemaden_' + nome_limpo,
-                        directory='./results/cemaden_' + nome_limpo
+                        directory='./results/cemaden_' + nome_limpo,
+                        #include_minutes=True,
+                        #minute_freq=5
                     )
                     
                     return df
