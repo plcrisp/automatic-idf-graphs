@@ -51,6 +51,7 @@ Onde:
     - K, m, n, t0: Parâmetros calculados pelo modelo.
 """
 
+from typing import List, Literal, Tuple
 import pandas as pd
 import math
 import numpy as np
@@ -60,6 +61,8 @@ import os
 
 from ...data.processing import remove_outliers_from_max
 from ...core.distributions import fit_data, get_top_fitted_distributions
+from .subdaily import get_max_subdaily_table
+from .intervals import DisaggregationScenario, get_subdaily_from_disaggregation_factors
 from scipy.optimize import minimize_scalar
 from sklearn.linear_model import LinearRegression
 
@@ -515,6 +518,112 @@ def get_final_idf(
             df_precipitation.to_csv(f'{directory}/{name_file}_{disag_factor}_precipitationfromIDF_subdaily.csv', index=False)
 
     return t0, n, K, m, df_intensity, df_precipitation
+
+
+
+def get_regional_mean_idf(
+    dataframes_list: List[pd.DataFrame],
+    names_list: List[str],
+    directory: str = "Results",
+    frequency: Literal['daily','hourly']='daily',
+    scenario: DisaggregationScenario = DisaggregationScenario.BASE,
+    var_value: float = 0.1,
+    plot_directory: str = "graphs",
+    durations: List[int] = None,
+    return_periods: List[int] = None,
+) -> Tuple[float, float, float, float, pd.DataFrame, pd.DataFrame]:
+    """
+    Computes a regional mean IDF curve using the full correct pipeline:
+    (1) subdaily maxima → (2) disaggregation factors → (3) pooled dataset → (4) final IDF.
+    
+    Parameters:
+        dataframes_list : list of raw precipitation dataframes
+        names_list      : names of stations
+        directory          : working directory for intermediate files
+        scenario       : disaggregation factor BASE, UMIDO, SECO
+        plot_directory     : output directory for final plot
+        durations          : durations in minutes for IDF table
+        return_periods     : return periods in years
+    
+    Returns:
+        t0, n, K, m, df_intensity, df_precipitation
+    """
+
+    if scenario == DisaggregationScenario.BASE:
+        type_tag = 'ger'
+    elif scenario == DisaggregationScenario.UMIDO:
+        type_tag = f'p{var_value}'
+    elif scenario == DisaggregationScenario.SECO:
+        type_tag = f'm{var_value}'
+    else:
+        raise ValueError("Cenário inválido.")
+
+    pooled_list = []
+
+    for df, name in zip(dataframes_list, names_list):
+        # Step 1 — Generate subdaily max table
+        max_table = get_max_subdaily_table(
+            df,
+            name_file=name,
+            dt_min=False,
+            output_dir=directory,
+        )
+
+        # Step 2 — Apply disaggregation
+        disagg_df = get_subdaily_from_disaggregation_factors(
+            df=max_table,
+            name_file=name,
+            scenario=scenario,
+            var_value=var_value,
+            frequency=frequency,
+            output_dir=directory
+        )
+
+        # Add to the pool
+        pooled_list.append(disagg_df)
+
+    # Step 3 — Create pooled regional dataset
+    pooled_df = pd.concat(pooled_list, ignore_index=True)
+
+    pooled_path = f"{directory}/max_subdaily_pooled_complete_{type_tag}.csv"
+    pooled_df.to_csv(pooled_path, index=False)
+
+    # Default durations and RPs
+    if durations is None:
+        durations = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 720, 1440]
+    if return_periods is None:
+        return_periods = [1, 2, 5, 10, 25, 50, 100, 200, 500, 1000]
+
+    # Step 4 — Run full IDF pipeline on pooled dataset
+    t0, n, K, m, df_int, df_prec = get_final_idf(
+        name_file=f"pooled_complete",
+        directory=directory,
+        disag_factor=type_tag,
+        save_file=False,
+        plot=False,
+        durations=durations,
+        return_periods=return_periods,
+        save_plot=False,
+        generate_tables=True,
+    )
+
+    # Plot regional IDF
+    plt.figure(figsize=(10, 6))
+    for rp in return_periods:
+        intensities = [K * (rp ** m) / ((d + t0) ** n) for d in durations]
+        plt.plot(durations, intensities, label=f"RP = {rp} anos")
+
+    plt.xlabel("Duração (min)")
+    plt.ylabel("Intensidade (mm/h)")
+    plt.title("Curva IDF regional média")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+
+    plt.show()
+    plt.close()
+
+    return t0, n, K, m, df_int, df_prec
 
 
 

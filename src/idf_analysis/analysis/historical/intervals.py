@@ -182,9 +182,15 @@ def get_subdaily_from_disaggregation_factors(
         if i < len(df_disagreg_factors):
             factor = df_disagreg_factors[col_name].iloc[i]
             column_name = f'Max_{interval}min' if interval < 60 else f'Max_{interval // 60}h'
-            df_subdaily[column_name] = (df_subdaily[reference_col] * factor).round(2)
+
+            # do not overwrite existing columns
+            if column_name not in df_subdaily.columns:
+                df_subdaily[column_name] = (df_subdaily[reference_col] * factor).round(2)
+            else:
+                # Column already exists → skip modification
+                pass
         else:
-            print(f"[WARNING] Intervalo {interval} não encontrado em fatores de desagregação.")
+            print(f"[WARNING] Interval {interval} not found in disaggregation factors.")
 
     output_path = Path(output_dir) / f"max_daily_{name_file}.csv"
     output_path.parent.mkdir(parents=True, exist_ok=True)
