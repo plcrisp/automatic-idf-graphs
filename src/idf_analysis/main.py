@@ -10,20 +10,7 @@ from idf_analysis.analysis.historical.intervals import DisaggregationScenario, g
 from idf_analysis.analysis.historical.subdaily import get_max_subdaily_table
 from idf_analysis.data.processing import read_csv, verification, fill_missing_data
 from idf_analysis.analysis.historical.validation import max_annual_precipitation
-from .data.api.climbra import get_climbra_data
 from .analysis.projection.dbc import dbc_percentilico
-
-from idf_analysis.data.api.climbra import choose_and_download_climbra_dataset, AllowedRootFolders, AllowedExtraFiles
-
-local_path = choose_and_download_climbra_dataset(
-    output_dir='./datasets/CLIMBRA',
-    allowed_roots=[AllowedRootFolders.GriddedData],
-    chunk_size=1<<14, # 16 KB
-    max_retries=3,
-    timeout=20, # seconds
-    show_progress=True
-)
-print("Saved to:", local_path)
 
 '''
 # Processamento de dados já baixados

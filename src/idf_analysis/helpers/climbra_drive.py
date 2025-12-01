@@ -1,3 +1,4 @@
+# [DEPRECATED]
 import os
 import re
 from typing import Tuple, Optional

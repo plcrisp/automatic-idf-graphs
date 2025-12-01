@@ -30,7 +30,9 @@ dependencies = [
     "seaborn",
     "statsmodels",
     "Unidecode",
-    "pyarrow"
+    "pyarrow",
+    "xarray",
+    "netcdf4"
 ]
 
 [project.urls]
