@@ -47,13 +47,16 @@ def load_and_prepare_data(name_obs, name_gcm_baseline, name_gcm_future, dir):
 
 
 
-def fit_distributions(df_obs, df_baseline, df_future):
+def fit_distributions(df_obs, obs_max, baseline_max, future_max):
     """Ajusta as distribuições de probabilidade para todos os conjuntos de dados."""
     print("\nPasso 2: Ajustando as distribuições de probabilidade...")
 
-    # Ajusta distribuições para os dados diários do GCM
-    dist_baseline = get_distribution(data_df=df_baseline, column_name='Precipitation', n=1, plot=False)
-    dist_future = get_distribution(data_df=df_future, column_name='Precipitation', n=1, plot=False)
+    # Ajusta distribuições para os dados de máximos anuais do GCM
+    dist_baseline = get_distribution(data_df=baseline_max, column_name='Precipitation', n=1, plot=False)
+    dist_future = get_distribution(data_df=future_max, column_name='Precipitation', n=1, plot=False)
+    
+    # Ajusta distribuição para dados observados (máximos anuais)
+    dist_obs_annual = get_distribution(data_df=obs_max, column_name='Precipitation', n=1, plot=False)
 
     # Ajusta uma distribuição para cada duração sub-diária dos dados observados
     dists_hist = {}
@@ -68,7 +71,7 @@ def fit_distributions(df_obs, df_baseline, df_future):
             raise ValueError(f"[ERRO] Não foi possível reconstruir a distribuição para {duracao}")
         dists_hist[duracao] = dist_obj
         
-    return dist_baseline, dist_future, dists_hist
+    return dist_baseline, dist_future, dists_hist, dist_obs_annual
 
 
 
@@ -91,8 +94,8 @@ def calculate_regression_coefficients(x_data, y_spatial_data, y_temporal_data, v
     """Calcula os coeficientes de regressão linear para os downscalings."""
     print("\nPasso 4: Calculando os coeficientes de regressão...")
     
-    # A variável 'x' é o logaritmo dos dados do GCM para linearizar a relação
-    x = np.log(x_data)
+    # Regressao linear simples (sem transformacao logaritmica)
+    x = x_data
     
     # --- Coeficientes para o Downscaling Espacial (a1, b1) ---
     coefs_spat = {}
@@ -119,24 +122,24 @@ def calculate_regression_coefficients(x_data, y_spatial_data, y_temporal_data, v
 
 
 
-def project_future_values(data_future, temporal_coeffs, spatial_coeffs):
-    """Projeta os dados futuros sub-diários usando os coeficientes de regressão."""
-    print("\nPasso 5: Gerando projeções finais para o cenário futuro...")
+def apply_eqm_correction(data_series, temporal_coeffs, spatial_coeffs):
+    """Aplica a correcao EQM para gerar valores sub-diarios a partir de uma serie diaria."""
+    print("\nPasso 5: Aplicando correcao EQM...")
     
     a2, b2 = temporal_coeffs['a2'], temporal_coeffs['b2']
     
     # Etapa chave do EQM:
-    # 1. Inverte a relação temporal para encontrar o "equivalente" de um valor futuro no período de baseline.
-    #    Fórmula original: Y_temp = a2*X_base + b2  =>  X_base = (Y_temp - b2) / a2
-    gcm_futuro_equivalente_baseline = (data_future - b2) / a2
+    # 1. Inverte a relacao temporal para encontrar o "equivalente" de um valor futuro no periodo de baseline.
+    #    Formula original: Y_temp = a2*X_base + b2  =>  X_base = (Y_temp - b2) / a2
+    gcm_equivalente_baseline = (data_series - b2) / a2
     
-    # 2. Aplica a relação espacial a este valor "equivalente" para obter o resultado final.
-    #    Fórmula: Y_final = a1*X_base + b1
+    # 2. Aplica a relacao espacial a este valor "equivalente" para obter o resultado final.
+    #    Formula: Y_final = a1*X_base + b1
     dados_finais_futuro = {}
     for duracao in COLUNAS_DADOS:
         a1 = spatial_coeffs[duracao]['a1']
         b1 = spatial_coeffs[duracao]['b1']
-        dados_finais_futuro[duracao] = a1 * gcm_futuro_equivalente_baseline + b1
+        dados_finais_futuro[duracao] = a1 * gcm_equivalente_baseline + b1
         
     return dados_finais_futuro
 
@@ -183,20 +186,18 @@ def save_results(
 def generate_eqm_figure_side_by_side(
     obs_max: pd.DataFrame,
     baseline_max: pd.DataFrame,
-    future_max: pd.DataFrame,
-    corrected_future: np.ndarray
+    corrected_baseline: np.ndarray
 ) -> Tuple[plt.Figure, np.ndarray]:
     """
     Gera uma única figura com dois subplots relacionados ao processo de downscaling via EQM:
     
     1. Comparação CDF→CDF entre dados observados e dados de baseline do GCM.
-    2. Comparação Antes vs Depois para os dados futuros do GCM (sem correção vs corrigidos via EQM).
+    2. Comparação Antes vs Depois para os dados de BASELINE do GCM (sem correção vs corrigidos via EQM).
     
     Args:
         obs_max (pd.DataFrame): Dados observados históricos de precipitação.
         baseline_max (pd.DataFrame): Dados de precipitação do GCM no período de baseline.
-        future_max (pd.DataFrame): Dados de precipitação do GCM no período futuro.
-        corrected_future (np.ndarray): Dados futuros do GCM corrigidos pelo EQM.
+        corrected_baseline (np.ndarray): Dados de baseline do GCM corrigidos pelo EQM.
     
     Returns:
         Tuple[plt.Figure, np.ndarray]: 
@@ -212,12 +213,12 @@ def generate_eqm_figure_side_by_side(
     axes[0].set_title("EQM - Observed vs GCM Baseline CDF")
     axes[0].legend()
 
-    years_future = future_max['Year'].to_numpy()
-    axes[1].plot(years_future, future_max['Precipitation'], label='GCM Future', marker='o')
-    axes[1].plot(years_future, corrected_future, label='GCM Future Corrected (EQM)', marker='s')
+    years_baseline = baseline_max['Year'].to_numpy()
+    axes[1].plot(years_baseline, baseline_max['Precipitation'], label='GCM Baseline (original)', marker='o', alpha=0.7)
+    axes[1].plot(years_baseline, corrected_baseline, label='GCM Baseline (bias-corrected)', marker='s', alpha=0.7)
     axes[1].set_xlabel("Year")
     axes[1].set_ylabel("Precipitation (mm/day)")
-    axes[1].set_title("GCM Future - Before vs After EQM")
+    axes[1].set_title("GCM Baseline - Before vs After Bias Correction")
     axes[1].legend()
 
     fig.tight_layout()
@@ -239,13 +240,13 @@ def eqm_downscaling(name_obs: str, name_baseline: str, name_future: str,
 
     Args:
         name_obs (str): Nome base do arquivo de dados observados.
-        name_gcm_baseline (str): Nome base do arquivo do GCM para o período de baseline.
-        name_gcm_future (str): Nome base do arquivo do GCM para o período futuro.
+        name_baseline (str): Nome base do arquivo do GCM para o período de baseline.
+        name_future (str): Nome base do arquivo do GCM para o período futuro.
         scenario (DisaggregationScenario): Cenário de desagregação (BASE, UMIDO, SECO).
         disag_factor (float): Fator de desagregação para cenários úmidos/secos.
-        dir_obs (str): Diretório dos dados observados.
-        dir_gcm (str): Diretório dos dados do GCM.
+        dir (str): Diretório dos dados de entrada e saída.
         verbose (bool): Se True, imprime detalhes do processo (ex: coeficientes).
+        plot (bool): Se True, gera figura comparando observado vs baseline corrigido no segundo painel.
     """
     print("Iniciando o processo de Downscaling EQM...")
     
@@ -262,12 +263,12 @@ def eqm_downscaling(name_obs: str, name_baseline: str, name_future: str,
         name_obs, name_baseline, name_future, dir
     )
     
-    # Gera os dados sub-diários observados (necessário para o ajuste de distribuição)
+    # Gera os dados sub-diarios observados (necessario para o ajuste de distribuicao)
     subdaily_obs = get_subdaily_from_disaggregation_factors(df=obs_max, scenario=scenario, var_value=disag_factor, name_file=name_obs, output_dir=dir)
 
     # ETAPA 2: Ajustar Distribuições de Probabilidade
-    dist_baseline, dist_future, dists_hist = fit_distributions(
-        subdaily_obs, df_baseline, df_future
+    dist_baseline, dist_future, dists_hist, dist_obs_annual = fit_distributions(
+        subdaily_obs, obs_max, baseline_max, future_max
     )
     
     data_baseline = baseline_max['Precipitation'].to_numpy()
@@ -275,7 +276,11 @@ def eqm_downscaling(name_obs: str, name_baseline: str, name_future: str,
     
     # ETAPA 3: Downscaling Espacial e Temporal via Quantis
     dados_spatdown = perform_spatial_downscaling(dist_baseline, dists_hist, data_baseline)
-    dados_tempdown = dist_future.ppf(dist_baseline.cdf(data_baseline)) # Sinal climático
+    dados_tempdown = dist_future.ppf(dist_baseline.cdf(data_baseline))
+    
+    # Criar correcao do baseline para visualizacao (escala de maximos anuais)
+    prob_baseline_annual = dist_baseline.cdf(data_baseline)
+    baseline_corrected_annual = dist_obs_annual.ppf(prob_baseline_annual)
     
     # ETAPA 4: Calcular Coeficientes de Regressão
     coefs_spat, coefs_temp = calculate_regression_coefficients(
@@ -285,8 +290,8 @@ def eqm_downscaling(name_obs: str, name_baseline: str, name_future: str,
         verbose=verbose
     )
     
-    # ETAPA 5: Projetar Valores Futuros
-    dados_finais_futuro = project_future_values(data_future, coefs_temp, coefs_spat)
+    # ETAPA 5: Aplicar correcao EQM nos dados futuros
+    dados_finais_futuro = apply_eqm_correction(data_future, coefs_temp, coefs_spat)
     
     # ETAPA 6: Salvar Resultados
     save_results(
@@ -306,15 +311,6 @@ def eqm_downscaling(name_obs: str, name_baseline: str, name_future: str,
     print("\nProcesso de Downscaling EQM concluído com sucesso!")
     
     if plot:
-        if isinstance(dados_finais_futuro, dict):
-            if "Max_24h" in dados_finais_futuro:
-                corrected_future_arr = np.array(dados_finais_futuro["Max_24h"])
-            else:
-                key_precip = next((k for k in dados_finais_futuro.keys() if k.lower() != "year"), None)
-                corrected_future_arr = np.array(dados_finais_futuro[key_precip]) if key_precip else np.array([])
-        else:
-            corrected_future_arr = np.array(dados_finais_futuro)
-        
-        figs = generate_eqm_figure_side_by_side(obs_max, baseline_max, future_max, corrected_future_arr)
+        figs = generate_eqm_figure_side_by_side(obs_max, baseline_max, baseline_corrected_annual)
 
         return figs
