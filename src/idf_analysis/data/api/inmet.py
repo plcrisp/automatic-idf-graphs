@@ -1,7 +1,6 @@
 
 from datetime import datetime, timedelta
 from unidecode import unidecode
-from dotenv import load_dotenv
 from importlib import resources
 import re
 
@@ -62,9 +61,6 @@ def get_inmet_data(
         pandas.DataFrame | None
             O *DataFrame* processado (quando ``process=True``) ou ``None``.
     """
-
-    # Preparação
-    load_dotenv()
 
     df_all_stations = load_inmet_station_parameters()
 
@@ -127,16 +123,11 @@ def get_inmet_data(
         else:
             break
 
-    # Requisição à API
-    token = os.getenv("INMET_KEY")
-    if not token:
-        print("❌ Variável de ambiente INMET_KEY não encontrada.")
-        return
-
     url = (
-        "https://apitempo.inmet.gov.br/token/estacao/"
-        f"{data_inicial.date()}/{data_final.date()}/{cod_estacao}/{token}"
+        "https://api-proxy-idf.onrender.com/api/inmet/"
+        f"{data_inicial.date()}/{data_final.date()}/{cod_estacao}"
     )
+
     print("\n📡 Consultando API…\n")
 
     response = requests.get(url)

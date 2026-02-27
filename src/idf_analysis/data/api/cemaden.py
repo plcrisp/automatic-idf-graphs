@@ -7,7 +7,6 @@ import zipfile
 import unicodedata
 import pandas as pd
 
-from dotenv import load_dotenv
 from datetime import datetime
 from ..processing import aggregate_to_csv
 from ..reader import process_data, DataSource
@@ -19,62 +18,15 @@ UFS_BRASIL = [
     "SP", "SE", "TO"
 ]
 
-def get_token(api_url: str) -> dict:
-    """
-    Faz uma requisição POST para obter um token de autenticação.
-    Args:
-        api_url (str): A URL do endpoint de autenticação da API.
-    Returns:
-        dict: O JSON da resposta contendo o token.
-    """
-    load_dotenv()
-    email = os.getenv("CEMADEN_EMAIL")
-    password = os.getenv("CEMADEN_PASSWORD")
+def get_cities_by_state(api_url: str, fu: str) -> list[dict]:
 
-    if not email or not password:
-        raise ValueError("Variáveis de ambiente API_EMAIL e API_PASSWORD não encontradas no .env")
+    params = {'uf': fu}
 
-    payload = {"email": email, "password": password}
-    headers = {'Content-Type': 'application/json'}
+    response = requests.get(api_url + f"/{fu}", timeout=15)
+    response.raise_for_status()
+    return response.json()
     
-    print("🔑 Autenticando e obtendo token...")
-    try:
-        response = requests.post(api_url, headers=headers, json=payload, timeout=10)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as err:
-        print(f"❌ Falha na comunicação com a API de token: {err}")
-        raise
-
-def get_cities_by_state(api_url: str, token: str, fu: str) -> list[dict]:
-    """
-    Busca as cidades de uma UF que possuem estações do Cemaden.
-    Args:
-        api_url (str): A URL do endpoint da API.
-        token (str): O token de autenticação JWT.
-        fu (str): A sigla da unidade federativa (UF).
-    """
-    if not token:
-        raise ValueError("Token de autenticação não pode ser vazio.")
-
-    # O token JWT é geralmente enviado no cabeçalho 'Authorization' como 'Bearer [token]'
-    # mas seguindo a descrição, enviaremos em um header chamado 'token'.
-    headers = {'token': token}
-    params = {'uf': fu, 'formato': 'JSON'}
-
-    print(f"🗺️  Buscando cidades para a UF: {fu}...")
-    try:
-        response = requests.get(api_url, headers=headers, params=params, timeout=15)
-        response.raise_for_status()
-        cidades = response.json()
-        if not cidades:
-            print(f"⚠️ Nenhuma cidade com estação encontrada para {fu}.")
-        return cidades
-    except requests.exceptions.RequestException as err:
-        print(f"❌ Falha ao buscar cidades: {err}")
-        raise
-    
-def get_stations_by_city(api_url: str, token: str, cod_ibge: str) -> list[dict]:
+def get_stations_by_city(api_url: str, cod_ibge: str) -> list[dict]:
     """
     Busca as estações de monitoramento de um município pelo código IBGE.
     Args:
@@ -84,15 +36,10 @@ def get_stations_by_city(api_url: str, token: str, cod_ibge: str) -> list[dict]:
     Returns:
         list[dict]: A lista de estações de monitoramento encontradas.
     """
-    if not token:
-        raise ValueError("Token de autenticação não pode ser vazio.")
-
-    headers = {'token': token}
-    params = {'codibge': cod_ibge, 'formato': 'JSON'}
 
     print(f"🛰️  Buscando estações para o município com código IBGE: {cod_ibge}...")
     try:
-        response = requests.get(api_url, headers=headers, params=params, timeout=15)
+        response = requests.get(api_url + f"/{cod_ibge}", timeout=15)
         response.raise_for_status()
         estacoes = response.json()
         if not estacoes:
@@ -102,7 +49,7 @@ def get_stations_by_city(api_url: str, token: str, cod_ibge: str) -> list[dict]:
         print(f"❌ Falha ao buscar estações: {err}")
         raise
     
-def schedule_data_request(api_url: str, token: str, params: dict) -> int | None:
+def schedule_data_request(api_url: str, params: dict) -> int | None:
     """
     Agenda a requisição de dados históricos e retorna o ID do agendamento.
     Args:
@@ -120,10 +67,9 @@ def schedule_data_request(api_url: str, token: str, params: dict) -> int | None:
         int | None: O ID do agendamento ou None em caso de falha.
     """
     print("\n📅 Agendando requisição de dados históricos...")
-    headers = {'token': token}
     
     try:
-        response = requests.get(api_url, headers=headers, params=params, timeout=15)
+        response = requests.get(api_url, params=params, timeout=15)
 
         response.raise_for_status()
         
@@ -151,7 +97,6 @@ def schedule_data_request(api_url: str, token: str, params: dict) -> int | None:
 
 def check_scheduling_status(
     api_url: str, 
-    token: str, 
     job_id: int, 
     station_name: dict, 
     selected_city: str, 
@@ -174,15 +119,10 @@ def check_scheduling_status(
     print(f"\n⏳ Iniciando verificação de status para o Agendamento ID: {job_id}.")
     print("Isso pode levar alguns minutos. O script irá verificar automaticamente.")
 
-    headers = {
-        'token': token,
-        'Accept': 'application/json'
-    }
-
     for attempt in range(1, max_attempts + 1):
         try:
             print(f"   Tentativa {attempt}/{max_attempts}... Verificando status...")
-            response = requests.get(api_url, headers=headers, timeout=15)
+            response = requests.get(api_url, timeout=15)
             response.raise_for_status()
             
             todos_agendamentos = response.json()
@@ -421,20 +361,16 @@ def finalize_request_by_id(
         O DataFrame processado ou None em caso de falha.
     """
     # Define as URLs necessárias dentro da função ou passa como argumento
-    TOKEN_URL = "https://sgaa.cemaden.gov.br/SGAA/rest/controle-token/tokens"
-    STATUS_URL = "https://sws.cemaden.gov.br/PED/rest/controle-agendamento/agendamentos"
+    STATUS_URL = "https://api-proxy-idf.onrender.com/api/cemaden/status"
     
     try:
-        if not token:
-            resposta_token = get_token(TOKEN_URL)
-            token = resposta_token.get("access_token") or resposta_token.get("token")
-            if not token:
-                print("❌ Não foi possível extrair o token da resposta da API.")
-                return None
-
-            print("✅ Token recebido com sucesso!\n")
     
-        resultado_final = check_scheduling_status(STATUS_URL, token, job_id, final_station, selected_city)
+        resultado_final = check_scheduling_status(
+            STATUS_URL,
+            job_id,
+            final_station,
+            selected_city
+        )
         
         if resultado_final:
             status_final = resultado_final.get("status", {}).get("description")
@@ -495,20 +431,11 @@ def get_cemaden_data():
     Executa o fluxo completo e interativo de coleta e processamento de dados do Cemaden.
     """
     # 1. Defina as URLs dos seus webservices
-    TOKEN_URL = "https://sgaa.cemaden.gov.br/SGAA/rest/controle-token/tokens"
-    CIDADES_URL = "https://sws.cemaden.gov.br/PED/rest/pcds-cadastro/cidades"
-    ESTACOES_URL = "https://sws.cemaden.gov.br/PED/rest/pcds-cadastro/estacoes"
-    AGENDAMENTO_URL = "https://sws.cemaden.gov.br/PED/rest/controle-agendamento/pcds-dados-historicos"
+    CIDADES_URL = "https://api-proxy-idf.onrender.com/api/cemaden/cidades"
+    ESTACOES_URL = "https://api-proxy-idf.onrender.com/api/cemaden/estacoes"
+    AGENDAMENTO_URL = "https://api-proxy-idf.onrender.com/api/cemaden/agendar"
 
-    try:
-        # Etapa 1: Obter o token
-        resposta_token = get_token(TOKEN_URL)
-        meu_token = resposta_token.get("access_token") or resposta_token.get("token")
-        if not meu_token:
-            print("❌ Não foi possível extrair o token da resposta da API.")
-            return
-
-        print("✅ Token recebido com sucesso!\n")
+    try:        
 
         # Etapa 2: Escolher UF
         uf_escolhida = questionary.select("Selecione um estado (UF):", choices=sorted(UFS_BRASIL)).ask()
@@ -517,7 +444,7 @@ def get_cemaden_data():
             return
 
         # Etapa 3: Escolher Cidade
-        lista_cidades = get_cities_by_state(CIDADES_URL, meu_token, uf_escolhida)
+        lista_cidades = get_cities_by_state(CIDADES_URL, uf_escolhida)
         if not lista_cidades: return
         
         nomes_cidades = [c["cidade"] for c in lista_cidades]
@@ -532,7 +459,7 @@ def get_cemaden_data():
             return
         
         # Etapa 4: Buscar e escolher a estação
-        lista_estacoes = get_stations_by_city(ESTACOES_URL, meu_token, str(cod_ibge_selecionado))
+        lista_estacoes = get_stations_by_city(ESTACOES_URL, str(cod_ibge_selecionado))
         if not lista_estacoes: return
         
         opcoes_estacao = [f"{e.get('codestacao', 'S/C')} - {e.get('nome', 'S/N')}" for e in lista_estacoes]
@@ -583,11 +510,11 @@ def get_cemaden_data():
             "uf": uf_escolhida,
         }
 
-        job_id = schedule_data_request(AGENDAMENTO_URL, meu_token, params_agendamento)
+        job_id = schedule_data_request(AGENDAMENTO_URL, params_agendamento)
 
         if job_id:
             # Agora a main apenas delega a finalização para a nova função
-            finalize_request_by_id(job_id, estacao_final, cidade_escolhida, meu_token, process=True)
+            finalize_request_by_id(job_id, estacao_final, cidade_escolhida, process=True)
 
     except (ValueError, requests.exceptions.RequestException) as e:
         print(f"\nOcorreu um erro e o programa será encerrado: {e}")
