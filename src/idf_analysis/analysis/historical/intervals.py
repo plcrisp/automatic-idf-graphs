@@ -192,7 +192,7 @@ def get_subdaily_from_disaggregation_factors(
         else:
             print(f"[WARNING] Interval {interval} not found in disaggregation factors.")
 
-    output_path = Path(output_dir) / f"max_daily_{name_file}.csv"
+    output_path = Path(output_dir) / f"max_subdaily_{name_file}_{type_tag}.csv"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df_subdaily.to_csv(output_path, index=False)
     print(f'[OK] Resultado salvo em: {output_path}')

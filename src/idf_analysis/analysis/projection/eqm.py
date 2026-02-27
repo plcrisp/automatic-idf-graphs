@@ -192,7 +192,7 @@ def generate_eqm_figure_side_by_side(
     Gera uma única figura com dois subplots relacionados ao processo de downscaling via EQM:
     
     1. Comparação CDF→CDF entre dados observados e dados de baseline do GCM.
-    2. Comparação Antes vs Depois para os dados de BASELINE do GCM (sem correção vs corrigidos via EQM).
+    2. Série temporal: Baseline original, Observado e Baseline corrigido.
     
     Args:
         obs_max (pd.DataFrame): Dados observados históricos de precipitação.
@@ -202,22 +202,25 @@ def generate_eqm_figure_side_by_side(
     Returns:
         Tuple[plt.Figure, np.ndarray]: 
             fig - Figura contendo os dois subplots.
-            axes - Array de eixos [ax_cdf, ax_before_after].
+            axes - Array de eixos [ax_cdf, ax_series].
     """
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     sns.ecdfplot(obs_max['Precipitation'], label='Observed', ax=axes[0])
     sns.ecdfplot(baseline_max['Precipitation'], label='GCM Baseline', ax=axes[0])
-    axes[0].set_xlabel("Precipitation (mm/day)")
+    axes[0].set_xlabel("Precipitation (mm/year)")
     axes[0].set_ylabel("Cumulative Frequency")
     axes[0].set_title("EQM - Observed vs GCM Baseline CDF")
     axes[0].legend()
 
     years_baseline = baseline_max['Year'].to_numpy()
+    years_obs = obs_max['Year'].to_numpy()
+    
     axes[1].plot(years_baseline, baseline_max['Precipitation'], label='GCM Baseline (original)', marker='o', alpha=0.7)
+    axes[1].plot(years_obs, obs_max['Precipitation'].to_numpy(), label='Observed', marker='^', alpha=0.7)
     axes[1].plot(years_baseline, corrected_baseline, label='GCM Baseline (bias-corrected)', marker='s', alpha=0.7)
     axes[1].set_xlabel("Year")
-    axes[1].set_ylabel("Precipitation (mm/day)")
+    axes[1].set_ylabel("Precipitation (mm/year)")
     axes[1].set_title("GCM Baseline - Before vs After Bias Correction")
     axes[1].legend()
 

@@ -140,12 +140,12 @@ max_i_santana = max_annual_precipitation(df=i_santana_daily, name_file='inmet_sa
 
 # Desagregação subdiária para diferentes cenários
 for scenario in [DisaggregationScenario.BASE, DisaggregationScenario.UMIDO, DisaggregationScenario.SECO]:
-    get_subdaily_from_disagregation_factors(
+    get_subdaily_from_disaggregation_factors(
         df=max_i_santana,
         scenario=scenario,
         var_value=0.2,
         name_file='inmet_santana',
-        directory='results/inmet_santana'
+        output_dir='results/inmet_santana'
     )
 
 # Plotagens dos máximos subdiários absolutos e relativos
@@ -212,12 +212,12 @@ def complete_precipitation_analysis(
 
     # Desagregação para todos os cenários
     for scenario in [DisaggregationScenario.BASE, DisaggregationScenario.UMIDO, DisaggregationScenario.SECO]:
-        get_subdaily_from_disagregation_factors(
+        get_subdaily_from_disaggregation_factors(
             df=max_df,
             scenario=scenario,
             var_value=var_value,
             name_file=name_file,
-            directory=directory
+            output_dir=directory
         )
 
     # Plotagens dos máximos

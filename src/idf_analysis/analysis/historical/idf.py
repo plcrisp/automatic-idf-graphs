@@ -92,7 +92,8 @@ def calculate_theoretical_max_precipitations(
                                serão calculadas. Exemplo: [2, 5, 10, 25, 50, 100].
         results_dir (str, opcional): Diretório onde os arquivos CSV de precipitação máxima estão armazenados. Padrão: 'results'.
         disag_factor (str, opcional): Fator de desagregação usado para ajustar o nome do arquivo ou processamento. 
-                                      Valores possíveis incluem 'nan' (padrão), 'original', 'bl' ou outros fatores personalizados.
+                                      Valores possíveis incluem 'nan' (padrão), 'original' ou 'ger' (para fatores de 
+                                      desagregação gerais), 'bl' (Bartlett-Lewis) ou outros fatores personalizados.
         plot (bool, opcional): Indica se um gráfico comparativo entre os valores observados e teóricos deve ser gerado. 
                                Padrão: False.
         return_distribution_name (bool, opcional): Indica se o nome da distribuição utilizada no ajuste deve ser retornado 
@@ -108,7 +109,7 @@ def calculate_theoretical_max_precipitations(
     # Ajusta o fator de desagregação
     disag = (
         '' if disag_factor == 'nan'
-        else '_ger' if disag_factor == 'original'
+        else '_ger' if disag_factor in ['original', 'ger']
         else '_bl' if disag_factor == 'bl'
         else f'_{disag_factor}'
     )
@@ -180,7 +181,8 @@ def calculate_idf_table(
     Parâmetros:
         name_file (str): Nome do arquivo base contendo os dados de precipitação.
         directory (str, opcional): Diretório onde os arquivos CSV serão salvos. Padrão: 'Results'.
-        disag_factor (str, opcional): Fator de desagregação usado para ajustar os dados. Padrão: 'nan'.
+        disag_factor (str, opcional): Fator de desagregação usado para ajustar os dados. Valores possíveis: 'nan', 
+                                      'original' ou 'ger', 'bl', ou outros fatores personalizados. Padrão: 'nan'.
         save_table (bool, opcional): Indica se a tabela IDF deve ser salva em um arquivo CSV. Padrão: False.
 
     Retorna:
@@ -427,7 +429,8 @@ def get_final_idf(
     Parâmetros:
         name_file (str): Nome do arquivo base contendo os dados de precipitação.
         directory (str, opcional): Diretório onde os arquivos de entrada e saída estão localizados. Padrão: 'Results'.
-        disag_factor (str, opcional): Fator de desagregação usado no nome dos arquivos. Padrão: 'nan'.
+        disag_factor (str, opcional): Fator de desagregação usado no nome dos arquivos. Valores possíveis: 'nan', 
+                                      'original' ou 'ger', 'bl', ou outros fatores personalizados. Padrão: 'nan'.
         save_file (bool, opcional): Se True, salva os parâmetros e/ou tabelas geradas como arquivos CSV. Padrão: False.
         plot (bool, opcional): Se True, plota as curvas IDF com os parâmetros calculados. Padrão: False.
         durations (list[int], opcional): Lista de durações (em minutos) para as tabelas e gráficos. 
