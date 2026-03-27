@@ -225,3 +225,107 @@ def get_inmet_data(
     else:
         print("Pós-processamento não aplicado. Arquivo bruto salvo.")
         return None
+
+
+
+
+def process_inmet_data(csv_path, process=True):
+    """
+    Processa o arquivo CSV baixado manualmente do portal do INMET,
+    limpa os dados e integra com o pipeline da biblioteca.
+    """
+    # 1. Extrair o nome da estação dos metadados do arquivo (primeiras 10 linhas)
+    nome_estacao = "Desconhecida"
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            for _ in range(10):
+                linha = f.readline()
+                if linha.startswith("Nome:"):
+                    nome_estacao = linha.split(":")[1].strip()
+                    break
+    except Exception as e:
+        print(f"Erro ao ler cabeçalho do arquivo: {e}")
+        return None
+
+    # 2. Ler os dados reais (ignorando as 10 linhas de metadados)
+    try:
+        df_dados = pd.read_csv(csv_path, sep=";", skiprows=10, encoding='utf-8')
+    except Exception as e:
+        print(f"Erro ao ler os dados do CSV: {e}")
+        return None
+
+    # Limpar colunas vazias geradas pelo ';' no final das linhas do CSV do INMET
+    df_dados = df_dados.loc[:, ~df_dados.columns.str.contains('^Unnamed')]
+
+    # Garantir que a coluna de data esteja no formato correto
+    if "Data Medicao" in df_dados.columns:
+        df_dados["Data Medicao"] = pd.to_datetime(df_dados["Data Medicao"]).dt.strftime("%Y-%m-%d")
+
+    # 3. Regras de Persistência (Criação de pastas e nomes de arquivos)
+    nome_limpo = unidecode(nome_estacao.lower())
+    nome_limpo = re.sub(r"[^a-z0-9]+", "_", nome_limpo)
+    nome_limpo = re.sub(r"_+", "_", nome_limpo).strip("_")
+    
+    pasta = f"../datasets/INMET_{nome_estacao.upper().replace(' ', '_')}"
+    os.makedirs(pasta, exist_ok=True)
+    caminho_csv_final = os.path.join(pasta, f"inmet_{nome_limpo}.csv")
+
+    # Função auxiliar para padronizar horas
+    def padronizar_hora(hora):
+        try:
+            if isinstance(hora, str) and ":" in hora:
+                return hora
+            hora_str = str(int(float(hora))).zfill(4)
+            return f"{hora_str[:2]}:{hora_str[2:]}"
+        except Exception:
+            return "00:00"
+
+    # 4. Mesclar com dados existentes (se houver) para evitar duplicatas
+    if os.path.exists(caminho_csv_final):
+        df_existente = (
+            pd.read_csv(caminho_csv_final, sep=";")
+            .loc[:, lambda d: ~d.columns.str.startswith("Unnamed")]
+        )
+
+        df_existente["DataHora"] = pd.to_datetime(
+            df_existente["Data Medicao"] + " " + df_existente["Hora Medicao"].apply(padronizar_hora),
+            format="%Y-%m-%d %H:%M", errors='coerce'
+        )
+        df_dados["DataHora"] = pd.to_datetime(
+            df_dados["Data Medicao"] + " " + df_dados["Hora Medicao"].astype(str).apply(padronizar_hora),
+            format="%Y-%m-%d %H:%M", errors='coerce'
+        )       
+
+        df_dados = (
+            pd.concat([df_existente, df_dados], ignore_index=True)
+            .drop_duplicates("DataHora", keep="last")
+            .sort_values("DataHora")
+        )
+        df_dados["Data Medicao"] = df_dados["DataHora"].dt.strftime("%Y-%m-%d")
+        df_dados.drop(columns=["DataHora"], inplace=True)
+    else:
+        # Apenas ordenar se for arquivo novo
+        df_dados = df_dados.sort_values(["Data Medicao", "Hora Medicao"])
+
+    # Salvar o arquivo limpo
+    df_dados.to_csv(caminho_csv_final, index=False, sep=";")
+    print(f"\n✅ Dados estruturados e salvos em: {caminho_csv_final}")
+    
+    # 5. Pós‑processamento da Biblioteca
+    if process and caminho_csv_final:
+        # NOTA: Certifique-se de que process_data, DataSource e aggregate_to_csv já estejam importados no seu código
+        df = process_data(
+            source=DataSource.INMET,
+            data_path=caminho_csv_final,
+        )
+        
+        aggregate_to_csv(
+            df=df,
+            name='inmet_' + nome_limpo,
+            directory='../results/inmet_' + nome_limpo
+        )
+        
+        return df
+    else:
+        print("Pós-processamento não aplicado. Arquivo bruto unificado salvo.")
+        return df_dados
