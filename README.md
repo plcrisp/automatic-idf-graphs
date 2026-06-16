@@ -3,8 +3,6 @@
 <p>
   <img alt="Python" src="https://img.shields.io/badge/python-3.9+-3776AB?logo=python&logoColor=white">
   <img alt="License" src="https://img.shields.io/github/license/plcrisp/Automatic-IDF-Graphs?color=green">
-  <img alt="Last commit" src="https://img.shields.io/github/last-commit/plcrisp/Automatic-IDF-Graphs">
-  <img alt="Funded by FAPEMIG" src="https://img.shields.io/badge/funded%20by-FAPEMIG-7e57c2">
   <img alt="Made with Jupyter" src="https://img.shields.io/badge/made%20with-Jupyter-F37626?logo=jupyter&logoColor=white">
 </p>
 
@@ -23,17 +21,6 @@ This project was born out of an undergraduate scientific research initiative in 
 - ☔ **Historical IDF curves**
 - 🌍 **Future IDF curves** combining CLIMBra climate projections with bias correction
 - 🗺️ **Visualization-ready** — interactive maps and ready-to-export plots
-
-## 🔄 How it fits together
-
-```mermaid
-flowchart LR
-    A["📥 Aquisição de Dados<br/>INMET · CEMADEN"] --> B["🧹 Tratamento de Dados<br/>Gap filling (RF) · Pearson · Dupla Massa · Tendência"]
-    B --> C["🎲 Desagregação<br/>CETESB ou Bartlett-Lewis"]
-    C --> D["📈 Modelagem de Extremos"]
-    D --> E["☔ IDF Histórica"]
-    E --> F["🌍 IDF Futura<br/>CLIMBra + Correção de Viés"]
-```
 
 ## 📓 Notebooks
 
