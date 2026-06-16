@@ -3,6 +3,7 @@
 <p>
   <img alt="Python" src="https://img.shields.io/badge/python-3.9+-3776AB?logo=python&logoColor=white">
   <img alt="License" src="https://img.shields.io/github/license/plcrisp/Automatic-IDF-Graphs?color=green">
+  <img alt="Last commit" src="https://img.shields.io/github/last-commit/plcrisp/Automatic-IDF-Graphs">
   <img alt="Made with Jupyter" src="https://img.shields.io/badge/made%20with-Jupyter-F37626?logo=jupyter&logoColor=white">
 </p>
 
@@ -22,18 +23,29 @@ This project was born out of an undergraduate scientific research initiative in 
 - 🌍 **Future IDF curves** combining CLIMBra climate projections with bias correction
 - 🗺️ **Visualization-ready** — interactive maps and ready-to-export plots
 
+## 🔄 How it fits together
+
+```mermaid
+flowchart LR
+    A["📥 Data Acquisition<br/>INMET · CEMADEN"] --> B["🧹 Data Processing<br/>Gap Filling (RF) · Pearson · Double Mass Curve · Trend Analysis"]
+    B --> C["🎲 Disaggregation<br/>CETESB or Bartlett-Lewis"]
+    C --> D["📈 Extreme Value Modeling"]
+    D --> E["☔ Historical IDF"]
+    E --> F["🌍 Future IDF<br/>CLIMBra + Bias Correction"]
+```
+
 ## 📓 Notebooks
 
 The fastest way to see what this library actually does is to walk through the notebooks — each one explores a technique used in the pipeline above.
 
-| Notebook | What it covers |
-|---|---|
-| `01_Data_Acquisition_and_Preparation` | Downloads and structures rainfall series from INMET/CEMADEN |
-| `02_Quality_Analysis_and_Exploratory_Statistics` | Data treatment: gap filling with an auxiliary station (Random Forest), consistency checks via Pearson correlation and double-mass curves, and trend tests |
-| `03_Historical_IDF_Curve_Generation` | Extreme value modeling and historical IDF curve generation |
-| `04_Future_IDF_Curve_Generation_with_Bias_Correction` | Future IDF curves combining CLIMBra projections with bias correction |
-| `05_Bartlett_Lewis_Disaggregation` | Rainfall disaggregation into sub-daily intervals using the Bartlett-Lewis stochastic model |
-| `Usage_Flow` | End-to-end example tying the whole pipeline together |
+| Notebook                                              | What it covers                                                                                                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01_Data_Acquisition_and_Preparation`                 | Downloads and structures rainfall series from INMET/CEMADEN                                                                                               |
+| `02_Quality_Analysis_and_Exploratory_Statistics`      | Data treatment: gap filling with an auxiliary station (Random Forest), consistency checks via Pearson correlation and double-mass curves, and trend tests |
+| `03_Historical_IDF_Curve_Generation`                  | Extreme value modeling and historical IDF curve generation                                                                                                |
+| `04_Future_IDF_Curve_Generation_with_Bias_Correction` | Future IDF curves combining CLIMBra projections with bias correction                                                                                      |
+| `05_Bartlett_Lewis_Disaggregation`                    | Rainfall disaggregation into sub-daily intervals using the Bartlett-Lewis stochastic model                                                                |
+| `Usage_Flow`                                          | End-to-end example tying the whole pipeline together                                                                                                      |
 
 > Notebooks 01–05 explore each technique in depth. Disaggregation comes before extreme value modeling in the actual pipeline (diagram above) because the IDF curve needs sub-daily duration series, which only exist once CETESB factors or the Bartlett-Lewis model break the daily data into finer intervals.
 
@@ -69,9 +81,9 @@ Automatic-IDF-Graphs/
 
 ## 🌐 Data Sources
 
-- **INMET** — Instituto Nacional de Meteorologia — https://www.inmet.gov.br
+- **INMET** — Instituto Nacional de Meteorologia — [https://www.inmet.gov.br](https://portal.inmet.gov.br)
 - **CEMADEN** — Centro Nacional de Monitoramento e Alertas de Desastres Naturais — http://www.cemaden.gov.br
-- **CLIMBra** — bias-corrected CMIP6 climate projections for Brazil (Ballarin et al., 2023, *Scientific Data*) — https://doi.org/10.1038/s41597-023-01956-z
+- **CLIMBra** — bias-corrected CMIP6 climate projections for Brazil (Ballarin et al., 2023, _Scientific Data_) — https://doi.org/10.1038/s41597-023-01956-z
 
 ## 📜 License
 
