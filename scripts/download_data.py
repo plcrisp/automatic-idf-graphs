@@ -22,7 +22,7 @@ def main():
         get_inmet_data()
     elif escolha == "CLIMBra":
         get_climbra_data(
-            allowed_roots=[AllowedRootFolders.GriddedData],
+            allowed_roots=[AllowedRootFolders.EnsembleData],
             chunk_size=1<<16,  # 64 KB para melhor throughput
             max_retries=3,
             timeout=60,  # segundos

@@ -39,7 +39,7 @@ class AllowedRootFolders:
     @classmethod
     def default(cls) -> list[str]:
         """Retorna a lista padrão de pastas raiz."""
-        return [cls.CatchmentsDataV3, cls.GriddedData]
+        return [cls.CatchmentsDataV3, cls.GriddedData, cls.EnsembleData]
 
 
 class AllowedExtraFiles:
